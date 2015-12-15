@@ -129,7 +129,9 @@ namespace Snake
         private void HandleSocketError(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
             if (Socket.State == WebSocketState.Open)
+            {
                 Socket.Close();
+            }
             ConnectToServer();
         }
 
@@ -161,6 +163,7 @@ namespace Snake
                 if (Opponents.TryGetValue(id, out opponent))
                 {
                     opponent.Score = score;
+                    opponent.ColorNum = color;
                     opponent.Snake.Clear();
                 }
                 else
@@ -198,7 +201,6 @@ namespace Snake
             {
                 Socket.Send(string.Format("food:{0},{1}", FoodPiece.X, FoodPiece.Y));
             }
-
         }
 
         private void GenerateFood()
