@@ -163,17 +163,13 @@ namespace Snake
                 {
                     opponent = Opponents[id];
                     opponent.Score = score;
+                    opponent.Snake.Clear();
                 }
                 else
                 {
-                    opponent = new Player(score);
+                    opponent = new Player(new List<Vec2>(), color, score);
                     Opponents.Add(id, opponent);
                 }
-                opponent.ColorNum = color;
-                if (opponent.Snake == null)
-                    opponent.Snake = new List<Vec2>();
-                else
-                    opponent.Snake.Clear();
                 var oppSnake = opponent.Snake;
                 for (int i = 3; i < bytes.Length; i += 2)
                 {
