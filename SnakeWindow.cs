@@ -108,6 +108,15 @@ namespace Snake
             GenerateFood();
         }
 
+        private void MakeSnake(Vec2 headPos)
+        {
+            Snake.Clear();
+            for (int i = 0; i < InitialSnakeLength; ++i)
+            {
+                Snake.Add(new Vec2(headPos.X - i, headPos.Y));
+            }
+        }
+
         private void ConnectToServer()
         {
             Socket = new WebSocket(ServerURL);
@@ -122,16 +131,6 @@ namespace Snake
             if (Socket.State == WebSocketState.Open)
                 Socket.Close();
             ConnectToServer();
-        }
-
-
-        private void MakeSnake(Vec2 headPos)
-        {
-            Snake.Clear();
-            for (int i = 0; i < InitialSnakeLength; ++i)
-            {
-                Snake.Add(new Vec2(headPos.X - i, headPos.Y));
-            }
         }
 
         private void HandleMessage(object sender, MessageReceivedEventArgs e)
@@ -159,9 +158,8 @@ namespace Snake
                 int score = bytes[1];
                 int color = bytes[2];
                 Player opponent;
-                if (Opponents.ContainsKey(id))
+                if (Opponents.TryGetValue(id, out opponent))
                 {
-                    opponent = Opponents[id];
                     opponent.Score = score;
                     opponent.Snake.Clear();
                 }
@@ -189,13 +187,18 @@ namespace Snake
                 packet.Add((byte)p.Y);
             }
             if (Socket.State == WebSocketState.Open)
+            {
                 Socket.Send(packet.ToArray(), 0, packet.Count);
+            }
         }
 
         private void ReportNewFood()
         {
             if (Socket.State == WebSocketState.Open)
+            {
                 Socket.Send(string.Format("food:{0},{1}", FoodPiece.X, FoodPiece.Y));
+            }
+
         }
 
         private void GenerateFood()
@@ -215,8 +218,6 @@ namespace Snake
             {
                 Socket.Close();
             }
-
-
             Canvas.Invalidate();
         }
 
@@ -234,11 +235,13 @@ namespace Snake
 
             Snake.Insert(0, head);
 
+            // snake has run into the wall
             if (head.X < 0 || head.X >= Grid.X || head.Y < 0 || head.Y >= Grid.Y)
             {
                 GameOver = true;
                 return;
             }
+            // snake has run into itself
             for (int j = 1; j < Snake.Count; ++j)
             {
                 if (head.X == Snake[j].X && head.Y == Snake[j].Y)
@@ -247,6 +250,7 @@ namespace Snake
                     return;
                 }
             }
+            // snake has run into an opponent
             foreach (var opponent in Opponents.Values)
             {
                 if (opponent.Snake == null) continue;
@@ -259,6 +263,7 @@ namespace Snake
                     }
                 }
             }
+            // snake has run into food
             if (head.X == FoodPiece.X && head.Y == FoodPiece.Y)
             {
                 GenerateFood();
