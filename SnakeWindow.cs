@@ -180,17 +180,16 @@ namespace Snake
 
         private void ReportSituation()
         {
-            var datagram = new List<byte>(Snake.Count << 1);
-            datagram.Add((byte)Score);
-            datagram.Add((byte)ColorNum);
+            var packet = new List<byte>(Snake.Count << 1);
+            packet.Add((byte)Score);
+            packet.Add((byte)ColorNum);
             foreach (var p in Snake)
             {
-                datagram.Add((byte)p.X);
-                datagram.Add((byte)p.Y);
+                packet.Add((byte)p.X);
+                packet.Add((byte)p.Y);
             }
-            var arr = datagram.ToArray();
             if (Socket.State == WebSocketState.Open)
-                Socket.Send(arr, 0, arr.Length);
+                Socket.Send(packet.ToArray(), 0, packet.Count);
         }
 
         private void ReportNewFood()
