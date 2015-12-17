@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using WebSocket4Net;
 
@@ -12,31 +10,24 @@ namespace Snake
 {
     public partial class SnakeWindow : Form
     {
-
         const int InitialSnakeLength = 4;
         Vec2 MaxWindowSize = new Vec2(700, 500);
         const int gridSize = 50;
         const int Speed = 20; // 20 tiles/s
-        static Brush[] Colors = {
-            Brushes.Red,
-            new SolidBrush(Color.FromArgb(0, 64, 255)),
-            Brushes.Green,
-            Brushes.Yellow,
-            Brushes.Orange,
-            Brushes.Cyan,
-            Brushes.Magenta
-        };
+        static Brush[] Colors = new uint[] {
+            0xff0000, 0x0040ff, 0x008000, 0xffff00, 0xff8000, 0x00ffff, 0xff00ff
+        }.Select(i => new SolidBrush(Color.FromArgb((int)(i + 0xff000000)))).ToArray();
 
         Vec2 Grid;
-        Vec2 TileSize;
+        int TileSize;
         List<Vec2> Snake = new List<Vec2>();
         bool GameOver;
         int Score;
 
         int Direction; // Down = 0, Left = 1, Right = 2, Up = 3
-        Vec2 FoodPiece;
+        Vec2 Food;
 
-        public PictureBox Canvas;
+        PictureBox Canvas;
         Timer GameTimer = new Timer();
 
         int ColorNum;
@@ -48,12 +39,12 @@ namespace Snake
         {
             InitializeComponent();
             int b = Math.Min(MaxWindowSize.X, MaxWindowSize.Y);
-            TileSize = new Vec2(b / gridSize, b / gridSize);
-            Grid = new Vec2(MaxWindowSize.X / TileSize.X, MaxWindowSize.Y / TileSize.Y);
-            Canvas.Width = TileSize.X * Grid.X;
-            Canvas.Height = TileSize.Y * Grid.Y;
+            TileSize = b / gridSize;
+            Grid = new Vec2(MaxWindowSize.X / TileSize, MaxWindowSize.Y / TileSize);
+            Canvas.Width = Grid.X * TileSize;
+            Canvas.Height = Grid.Y * TileSize;
             Width = Canvas.Width + 50;
-            Height = Canvas.Height + 100;
+            Height = Canvas.Height + 60;
             KeyDown += OnKeyPressed;
             Canvas.Paint += new PaintEventHandler(Repaint);
 
@@ -119,15 +110,25 @@ namespace Snake
 
         private void ConnectToServer()
         {
+            this.Text = "Connecting to server...";
             Socket = new WebSocket(ServerURL);
-            Socket.Opened += (s, e) => ReportSituation();
+            Socket.Opened += OnSocketOpen;
             Socket.Error += HandleSocketError;
             Socket.MessageReceived += HandleMessage;
+            Socket.Closed += (s, e) => this.Text = "Connection to server lost. You've probably killed yourself.";
             Socket.Open();
+        }
+
+        private void OnSocketOpen(object sender, EventArgs e)
+        {
+            this.Text = "Connection to server established";
+            Score = 0;
+            ReportSituation();
         }
 
         private void HandleSocketError(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
+            this.Text = string.Format("Error while connecting to server ({0}). Retrying...", e.Exception.Message);
             if (Socket.State == WebSocketState.Open)
             {
                 Socket.Close();
@@ -141,8 +142,8 @@ namespace Snake
             if (msg.StartsWith("food:"))
             {
                 var numStrArr = msg.Substring(5).Split(',');
-                FoodPiece.X = byte.Parse(numStrArr[0]);
-                FoodPiece.Y = byte.Parse(numStrArr[1]);
+                Food.X = byte.Parse(numStrArr[0]);
+                Food.Y = byte.Parse(numStrArr[1]);
             }
             else if (msg.StartsWith("color:"))
             {
@@ -199,14 +200,14 @@ namespace Snake
         {
             if (Socket.State == WebSocketState.Open)
             {
-                Socket.Send(string.Format("food:{0},{1}", FoodPiece.X, FoodPiece.Y));
+                Socket.Send(string.Format("food:{0},{1}", Food.X, Food.Y));
             }
         }
 
         private void GenerateFood()
         {
             Random random = new Random();
-            FoodPiece = new Vec2(random.Next(0, Grid.X), random.Next(0, Grid.Y));
+            Food = new Vec2(random.Next(0, Grid.X), random.Next(0, Grid.Y));
         }
 
         private void UpdateGame(object sender, EventArgs e)
@@ -235,7 +236,7 @@ namespace Snake
                 case 3: --head.Y; break;
             }
 
-            Snake.Insert(0, head);
+
 
             // snake has run into the wall
             if (head.X < 0 || head.X >= Grid.X || head.Y < 0 || head.Y >= Grid.Y)
@@ -244,9 +245,9 @@ namespace Snake
                 return;
             }
             // snake has run into itself
-            for (int j = 1; j < Snake.Count; ++j)
+            foreach (var part in Snake)
             {
-                if (head.X == Snake[j].X && head.Y == Snake[j].Y)
+                if (head.Equals(part))
                 {
                     GameOver = true;
                     return;
@@ -255,18 +256,21 @@ namespace Snake
             // snake has run into an opponent
             foreach (var opponent in Opponents.Values)
             {
-                if (opponent.Snake == null) continue;
-                foreach (var part in opponent.Snake)
+                try
                 {
-                    if (head.X == part.X && head.Y == part.Y)
+                    foreach (var part in opponent.Snake)
                     {
-                        GameOver = true;
-                        return;
+                        if (head.Equals(part))
+                        {
+                            GameOver = true;
+                            return;
+                        }
                     }
                 }
+                catch (Exception e) { }
             }
             // snake has run into food
-            if (head.X == FoodPiece.X && head.Y == FoodPiece.Y)
+            if (head.Equals(Food))
             {
                 GenerateFood();
                 ReportNewFood();
@@ -276,6 +280,7 @@ namespace Snake
             {
                 Snake.RemoveAt(Snake.Count - 1);
             }
+            Snake.Insert(0, head);
         }
 
         private void Repaint(object sender, PaintEventArgs e)
@@ -300,10 +305,10 @@ namespace Snake
             }
             else
             {
+                var tileVec = new Vec2(TileSize, TileSize);
                 foreach (var part in Snake)
                 {
-                    var rect = new Rectangle(part.X * TileSize.X, part.Y * TileSize.Y, TileSize.X, TileSize.Y);
-                    canvas.FillRectangle(Colors[ColorNum], rect);
+                    DrawRectangle(canvas, part.ScaleBy(TileSize), tileVec, Colors[ColorNum]);
                 }
                 int textY = 4;
                 canvas.DrawString("You: " + Score, this.Font, Colors[ColorNum], new PointF(4, textY));
@@ -313,22 +318,24 @@ namespace Snake
                     var oppColor = Colors[opponent.ColorNum];
                     try
                     {
-
                         foreach (var part in opponent.Snake)
                         {
-                            var rect = new Rectangle(part.X * TileSize.X, part.Y * TileSize.Y, TileSize.X, TileSize.Y);
-                            canvas.FillRectangle(oppColor, rect);
+                            DrawRectangle(canvas, part.ScaleBy(TileSize), tileVec, oppColor);
                         }
-                        
+                    }
+                    catch (Exception exception)
+                    { }
+                    var str = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
+                        canvas.DrawString(str, this.Font, oppColor, new PointF(4, textY += 16));
                 }
-                catch (Exception exception)
-                { }
-                var str = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
-                    canvas.DrawString(str, this.Font, oppColor, new PointF(4, textY += 16));
-                }
-                var foodRect = new Rectangle(FoodPiece.X * TileSize.X, FoodPiece.Y * TileSize.Y, TileSize.X, TileSize.Y);
-                canvas.FillRectangle(Brushes.White, foodRect);
+                DrawRectangle(canvas, Food.ScaleBy(TileSize), new Vec2(TileSize, TileSize), Brushes.White);
             }
+        }
+
+        private static void DrawRectangle(Graphics canvas, Vec2 topLeft, Vec2 size, Brush color)
+        {
+            var rect = new Rectangle(topLeft.X, topLeft.Y, size.X, size.Y);
+            canvas.FillRectangle(color, rect);
         }
     }
 }

@@ -22,5 +22,8 @@ namespace Snake
             X = x;
             Y = y;
         }
+
+        public bool Equals(Vec2 v) => X == v.X && Y == v.Y;
+        public Vec2 ScaleBy(int a) => new Vec2(X * a, Y * a);
     }
 }
