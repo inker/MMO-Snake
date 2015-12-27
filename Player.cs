@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace Snake
 {
-    class Player
+    public class Player
     {
         public List<Vec2> Snake;
         public int ColorNum;
