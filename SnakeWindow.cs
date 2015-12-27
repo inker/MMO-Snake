@@ -9,6 +9,7 @@ namespace Snake
     {
 
         static Vec2 MaxWindowSize = new Vec2(700, 500);
+        static int InitialInterval;
         const int gridSize = 50;
 
         static Brush[] Colors = new uint[] {
@@ -35,28 +36,29 @@ namespace Snake
             Canvas.Paint += new PaintEventHandler(Repaint);
 
             Game = new Game(Grid);
+            InitialInterval = 1000 / Game.InitialSpeed;
             Game.OnMessage += (s, e) => this.Text = e.ToString();
             KeyDown += (s, e) => Game.HandleKeyDown(e.KeyCode);
             KeyUp += (s, e) => Game.HandleKeyUp(e.KeyCode);
             Game.Start();
 
-            GameTimer.Interval = 50;
+            GameTimer.Interval = InitialInterval;
             GameTimer.Tick += UpdateGame;
             GameTimer.Start();
         }
 
         private void UpdateGame(object sender, EventArgs e)
         {
-            if (GameTimer.Interval < 50)
+            if (GameTimer.Interval < InitialInterval)
             {
                 if (!Game.Nitro)
                 {
-                    GameTimer.Interval = 50;
+                    GameTimer.Interval = InitialInterval;
                 }
             }
             else if (Game.Nitro)
             {
-                GameTimer.Interval = 25;
+                GameTimer.Interval = InitialInterval >> 1;
             }
             Game.Update();
             Canvas.Invalidate();

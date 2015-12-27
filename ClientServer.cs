@@ -9,19 +9,25 @@ namespace Snake
     {
         public MyEventArgs(string message) : base()
         {
-            Message = message;
+            Msg = message;
         }
 
-        public override string ToString() => Message;      
-        string Message { get; set; }
+        public override string ToString() => Msg;      
+        string Msg { get; }
     }
+
     public class ClientServer
     {
         public event EventHandler OnMessage;
         static string ServerURL = "ws://tron-inker.c9.io";
         WebSocket Socket;
         Game Game;
-        string Msg { set { OnMessage(this, new MyEventArgs(value)); } }
+        string Message {
+            set
+            {
+                //OnMessage(this, new MyEventArgs(value));
+            }
+        }
 
         public ClientServer(Game game)
         {
@@ -30,30 +36,48 @@ namespace Snake
 
         public void Connect()
         {
-            Msg = "Connecting to server...";
+            Message = "Connecting to server...";
             Socket = new WebSocket(ServerURL);
             Socket.Opened += OnSocketOpen;
             Socket.Error += HandleSocketError;
+            Socket.DataReceived += HandleData;
             Socket.MessageReceived += HandleMessage;
-            Socket.Closed += (s, e) => Msg = "Connection to server lost. You've probably killed yourself.";
+            Socket.Closed += OnSocketClosed; ;
             Socket.Open();
+        }
+
+        private void OnSocketClosed(object sender, EventArgs e)
+        {
+            if (Game.IsOver)
+            {
+                Message = "Connection to server lost. You've probably killed yourself.";
+            }
+            else
+            {
+                Connect();
+            }
         }
 
         private void OnSocketOpen(object sender, EventArgs e)
         {
-            Msg = "Connection to server established";
+            Message = "Connection to server established";
             //Game.Score = 0;
             ReportSituation();
         }
 
         private void HandleSocketError(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            Msg = "Error while connecting to server (" + e.Exception.Message + "). Retrying...";
+            Message = "Error while connecting to server (" + e.Exception.Message + "). Retrying...";
             if (Socket.State == WebSocketState.Open)
             {
                 Socket.Close();
             }
             Connect();
+        }
+
+        private void HandleData(object sender, DataReceivedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void HandleMessage(object sender, MessageReceivedEventArgs e)
@@ -90,21 +114,10 @@ namespace Snake
                 int score = (bytes[1] << 8) | bytes[2];
                 int color = bytes[3];
                 bool nitro = bytes[4] > 0;
-                Player opponent;
-                if (Game.Opponents.TryGetValue(id, out opponent))
-                {
-                    opponent.Score = score;
-                    opponent.ColorNum = color;
-                    opponent.Nitro = nitro;
-                    opponent.Snake.Clear();
-                }
-                else
-                {
-                    opponent = new Player(new List<Vec2>(), color, score, nitro);
-                    Game.Opponents.Add(id, opponent);
-                }
+
+                Player opponent = Game.GetOrMakePlayer(id, color, score, nitro);
                 var oppSnake = opponent.Snake;
-                for (int i = 4; i < bytes.Length; i += 2)
+                for (int i = 5; i < bytes.Length; i += 2)
                 {
                     oppSnake.Add(new Vec2(bytes[i], bytes[i + 1]));
                 }
