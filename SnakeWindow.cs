@@ -24,8 +24,7 @@ namespace Snake
         public SnakeWindow()
         {
             InitializeComponent();
-            int b = Math.Min(MaxWindowSize.X, MaxWindowSize.Y);
-            TileSize = b / gridSize;
+            TileSize = Math.Min(MaxWindowSize.X, MaxWindowSize.Y) / gridSize;
             var Grid = new Vec2(MaxWindowSize.X / TileSize, MaxWindowSize.Y / TileSize);
 
             Canvas.Width = Grid.X * TileSize;
@@ -81,7 +80,9 @@ namespace Snake
             else
             {
                 var tileVec = new Vec2(TileSize - 1, TileSize - 1);
-                var brush = Game.Nitro ? BrightenBrush(Colors[Game.ColorNum]) : Colors[Game.ColorNum];
+                var brush = Colors[Game.ColorNum];
+                if (Game.Nitro)
+                    brush = BrightenBrush(brush as SolidBrush);
                 foreach (var part in Game.Snake)
                 {
                     DrawRectangle(canvas, part.ScaleBy(TileSize), tileVec, brush);
@@ -91,7 +92,9 @@ namespace Snake
                 foreach (var pair in Game.Opponents)
                 {
                     var opponent = pair.Value;
-                    brush = Game.Nitro ? BrightenBrush(Colors[opponent.ColorNum]) : Colors[opponent.ColorNum];
+                    brush = Colors[opponent.ColorNum];
+                    if (opponent.Nitro)
+                        brush = BrightenBrush(brush as SolidBrush);
                     try
                     {
                         foreach (var part in opponent.Snake)
@@ -108,17 +111,17 @@ namespace Snake
             }
         }
 
+        private static Brush BrightenBrush(SolidBrush brush)
+        {
+            var color = brush.Color;
+            color = Color.FromArgb(Math.Min(color.R + 128, 255), Math.Min(color.G + 128, 255), Math.Min(color.B + 128, 255));
+            return new SolidBrush(color);
+        }
+
         private static void DrawRectangle(Graphics canvas, Vec2 topLeft, Vec2 size, Brush color)
         {
             var rect = new Rectangle(topLeft.X, topLeft.Y, size.X, size.Y);
             canvas.FillRectangle(color, rect);
-        }
-
-        private static Brush BrightenBrush(Brush brush)
-        {
-            var color = (brush as SolidBrush).Color;
-            color = Color.FromArgb(Math.Min(color.R + 128, 255), Math.Min(color.G + 128, 255), Math.Min(color.B + 128, 255));
-            return new SolidBrush(color);
         }
     }
 }

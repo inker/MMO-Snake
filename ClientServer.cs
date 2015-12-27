@@ -89,16 +89,18 @@ namespace Snake
                 byte id = bytes[0];
                 int score = (bytes[1] << 8) | bytes[2];
                 int color = bytes[3];
+                bool nitro = bytes[4] > 0;
                 Player opponent;
                 if (Game.Opponents.TryGetValue(id, out opponent))
                 {
                     opponent.Score = score;
                     opponent.ColorNum = color;
+                    opponent.Nitro = nitro;
                     opponent.Snake.Clear();
                 }
                 else
                 {
-                    opponent = new Player(new List<Vec2>(), color, score);
+                    opponent = new Player(new List<Vec2>(), color, score, nitro);
                     Game.Opponents.Add(id, opponent);
                 }
                 var oppSnake = opponent.Snake;
@@ -115,6 +117,7 @@ namespace Snake
             packet.Add((byte)Game.Score);
             packet.Add((byte)(Game.Score >> 8));
             packet.Add((byte)Game.ColorNum);
+            packet.Add((byte)(Game.Nitro ? 1 : 0));
             foreach (var p in Game.Snake)
             {
                 packet.Add((byte)p.X);
