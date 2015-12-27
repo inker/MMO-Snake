@@ -25,7 +25,7 @@ namespace Snake
         string Message {
             set
             {
-                //OnMessage(this, new MyEventArgs(value));
+                OnMessage(this, new MyEventArgs(value));
             }
         }
 
