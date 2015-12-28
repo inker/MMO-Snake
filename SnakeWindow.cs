@@ -198,8 +198,8 @@ namespace Snake
             OpenGL gl = GLControl.OpenGL;
             gl.MatrixMode(OpenGL.GL_PROJECTION);
             gl.LoadIdentity();
-            gl.Perspective(100.0f, (double)Width / (double)Height, 0.01, 1000.0);
-            gl.LookAt(1, 30, 30, 0, 0, 0, 0, 1, 0);
+            gl.Perspective(90.0f, (double)Width / (double)Height, 0.01, 1000.0);
+            gl.LookAt(1, 25, 32, 0, 0, 0, 0, 1, 0);
             gl.MatrixMode(OpenGL.GL_MODELVIEW);
         }
 
@@ -223,7 +223,7 @@ namespace Snake
             gl.LoadIdentity();
             //gl.Scale(0.5f, 0.5f, 0.5f);
             var a = new SharpGL.RenderContextProviders.FBORenderContextProvider();
-            gl.Translate((-Game.Grid.X >> 1) + 5 - (float)Game.Snake[0].X / 5, 10-((float)Game.Snake[0].Y / 5), -20);
+            gl.Translate((-Game.Grid.X >> 1) + 5 - (float)Game.Snake[0].X / 5, -((float)Game.Snake[0].Y / 15), -20 - ((float)Game.Snake[0].Y / 15));
             
             gl.LineWidth(1f);
             gl.Color(0.1f, 0.1f, 0.1f, 1f);

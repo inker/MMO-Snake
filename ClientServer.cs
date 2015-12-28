@@ -43,9 +43,13 @@ namespace Snake
         {
             CloseSocket();
             Message = "Connecting to server...";
-            if (Socket.State != WebSocketState.Open)
+            try
             {
                 Socket.Open();
+            }
+            catch (Exception e)
+            {
+                // swallow
             }
         }
 
