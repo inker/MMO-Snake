@@ -1,7 +1,6 @@
 ﻿using SharpGL;
 using SharpGL.SceneGraph;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -12,9 +11,13 @@ namespace Snake
     {
         static Vec2 MaxWindowSize = new Vec2(700, 500);
         static int GridSize = 50;
-        static SolidBrush[] Colors = new uint[] {
+        static SolidBrush[] Brushes = new uint[] {
             0xff0000, 0x0040ff, 0x008000, 0xffff00, 0xff8000, 0x00ffff, 0xff00ff
         }.Select(i => new SolidBrush(Color.FromArgb((int)(i + 0xff000000)))).ToArray();
+
+        Game Game;
+        int TileSize;
+        Timer Timer = new Timer();
 
         int _speed;
         int Speed
@@ -34,28 +37,23 @@ namespace Snake
             get { return _openGLMode; }
             set
             {
-                var strs = new string[] { "Change to OpenGL", "Fall back to GDI" };
                 if (value)
                 {
                     Canvas.Hide();
                     GLControl.Show();
                     Timer.Stop();
-                    ChangeModeButton.Text = strs[1];
+                    ChangeModeButton.Text = "Fall back to GDI";
                 }
                 else
                 {
                     GLControl.Hide();
                     Canvas.Show();
                     Timer.Start();
-                    ChangeModeButton.Text = strs[0];
+                    ChangeModeButton.Text = "Change to OpenGL";
                 }
                 _openGLMode = value;
             }
         }
-
-        Game Game;
-        int TileSize;
-        Timer Timer = new Timer();
 
         public SnakeWindow()
         {
@@ -136,7 +134,7 @@ namespace Snake
                 {
                     SizeF msgSize = canvas.MeasureString(s, Font);
                     var msgPoint = new PointF(centerWidth - msgSize.Width / 2, y += 16);
-                    canvas.DrawString(s, Font, Brushes.White, msgPoint);
+                    canvas.DrawString(s, base.Font, System.Drawing.Brushes.White, msgPoint);
                 }
             }
             else
@@ -149,25 +147,25 @@ namespace Snake
                 {
                     var opponent = pair.Value;
                     brush = DrawSnake(canvas, pair.Value, tileVec);
-                    var str = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
-                    canvas.DrawString(str, this.Font, brush, new PointF(4, textY += 16));
+                    var scoreString = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
+                    canvas.DrawString(scoreString, this.Font, brush, new PointF(4, textY += 16));
                 }
-                DrawRectangle(canvas, Game.Food.ScaleBy(TileSize), tileVec, Brushes.White);
+                Util.DrawRectangle(canvas, Game.Food.ScaleBy(TileSize), tileVec, System.Drawing.Brushes.White);
             }
         }
 
         private SolidBrush DrawSnake(Graphics canvas, Player player, Vec2 partSize)
         {
-            var brush = Colors[player.ColorNum];
+            var brush = Brushes[player.ColorNum];
             if (player.Nitro)
             {
-                brush = BrightenBrush(brush);
+                brush = Util.BrightenBrush(brush);
             }
             try
             {
                 foreach (var part in player.Snake)
                 {
-                    DrawRectangle(canvas, part.ScaleBy(TileSize), partSize, brush);
+                    Util.DrawRectangle(canvas, part.ScaleBy(TileSize), partSize, brush);
                 }
             }
             catch (Exception ex)
@@ -177,18 +175,6 @@ namespace Snake
             return brush;
         }
 
-        private static SolidBrush BrightenBrush(SolidBrush brush)
-        {
-            var color = brush.Color;
-            color = Color.FromArgb(Math.Min(color.R + 128, 255), Math.Min(color.G + 128, 255), Math.Min(color.B + 128, 255));
-            return new SolidBrush(color);
-        }
-
-        private static void DrawRectangle(Graphics canvas, Vec2 topLeft, Vec2 size, Brush brush)
-        {
-            var rect = new Rectangle(topLeft.X, topLeft.Y, size.X, size.Y);
-            canvas.FillRectangle(brush, rect);
-        }
 
         private void GameOnMessage(object sender, EventArgs e)
         {
@@ -247,87 +233,32 @@ namespace Snake
             gl.LineWidth(0.25f);
             gl.Color(0.1f, 0.1f, 0.1f, 1f);
             gl.Begin(OpenGL.GL_LINES);
-            for (int x = 0; x <= Game.Grid.X; ++x)
+            for (int i = 0; i <= Game.Grid.X; ++i)
             {
-                gl.Vertex(x, 0, 0);
-                gl.Vertex(x, 0, Game.Grid.Y);
+                gl.Vertex(i, 0, 0);
+                gl.Vertex(i, 0, Game.Grid.Y);
             }
-            for (int y = 0; y <= Game.Grid.Y; ++y)
+            for (int i = 0; i <= Game.Grid.Y; ++i)
             {
-                gl.Vertex(0, 0, y);
-                gl.Vertex(Game.Grid.X, 0, y);
+                gl.Vertex(0, 0, i);
+                gl.Vertex(Game.Grid.X, 0, i);
             }
             gl.End();
-            DrawGLSnake(gl, Game);
+            var color = Util.DrawGLSnake(gl, Game, Brushes);
+            int y = Canvas.Height + 20;
+            Util.DrawGLScore(gl, y -= 20, "You", Game.Score, color);
             foreach (var pair in Game.Opponents)
             {
                 var opponent = pair.Value;
-                DrawGLSnake(gl, opponent);
-                //var str = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
-                //GLControl.DrawString(str, this.Font, brush, new PointF(4, textY += 16));
+                color = Util.DrawGLSnake(gl, opponent, Brushes);
+                Util.DrawGLScore(gl, y -= 20, "Opponent " + pair.Key, opponent.Score, color);
             }
-            DrawGLBox(gl, new Vertex(Game.Food.X, 0, Game.Food.Y), new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), new GLColor(1, 1, 1, 1));
-            var borderColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
-            DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(0, 0, Game.Grid.Y), borderColor);
-            DrawGLBox(gl, new Vertex(Game.Grid.X, 1, -1), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y), borderColor);
-            DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(Game.Grid.X, 0, 0), borderColor);
-            DrawGLBox(gl, new Vertex(-1, 1, Game.Grid.Y), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y + 1), borderColor);
-
-        }
-
-        void DrawGLSnake(OpenGL gl, Player player)
-        {
-            var brush = Colors[Game.ColorNum];
-            if (Game.Nitro)
-            {
-                brush = BrightenBrush(brush);
-            }
-            var brushColor = brush.Color;
-            var color = new GLColor(brushColor.R / 255.0f, brushColor.G / 255.0f, brushColor.B / 255.0f, brushColor.A / 255.0f);
-            try {
-                foreach (var part in Game.Snake)
-                {
-                    DrawGLBox(gl, new Vertex(part.X, 0, part.Y), new Vertex(part.X + 1, 1, part.Y + 1), color);
-                }
-            }
-            catch (Exception ex)
-            {
-                // swallow
-            }
-        }
-
-        void DrawGLBox(OpenGL gl, Vertex a, Vertex b, GLColor color)
-        {
-            Vertex v1 = new Vertex(a.X, a.Y, b.Z), v2 = new Vertex(a.X, b.Y, a.Z), v3 = new Vertex(a.X, b.Y, b.Z),
-                v4 = new Vertex(b.X, a.Y, a.Z), v5 = new Vertex(b.X, a.Y, b.Z), v6 = new Vertex(b.X, b.Y, a.Z);
-            var triangleVertices = new Vertex[][] {
-                new Vertex[] { a, v1, v3 }, new Vertex[] { a, v2, v3 }, new Vertex[] { v4, v5, b }, new Vertex[] { v4, v6, b },
-                new Vertex[] { a, v1, v5 }, new Vertex[] { a, v4, v5 }, new Vertex[] { v2, v3, b }, new Vertex[] { v2, v6, b },
-                new Vertex[] { v1, v2, v6 }, new Vertex[] { v1, v4, v6 }, new Vertex[] { v1, v3, b }, new Vertex[] { v1, v5, b }
-            };
-            gl.Begin(OpenGL.GL_TRIANGLES);
-            for (int i = 0; i < triangleVertices.Length; ++i)
-            {
-                var vertices = triangleVertices[i];
-                if (i < 4)
-                {
-                    gl.Color(Math.Max(color.R - 0.75f, 0), Math.Max(color.G - 0.75f, 0), Math.Max(color.B - 0.75f, 0));
-                }
-                else if (i < 8)
-                {
-                    gl.Color(Math.Max(color.R - 0.5f, 0), Math.Max(color.G - 0.5f, 0), Math.Max(color.B - 0.5f, 0));
-                }
-                else
-                {
-                    gl.Color(color);
-                }
-                foreach (var v in vertices)
-                {
-                    gl.Vertex(v);
-                }
-            }
-
-            gl.End();
+            Util.DrawGLBox(gl, new Vertex(Game.Food.X, 0, Game.Food.Y), new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), new GLColor(1, 1, 1, 1));
+            var brinkColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
+            Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(0, 0, Game.Grid.Y), brinkColor);
+            Util.DrawGLBox(gl, new Vertex(Game.Grid.X, 1, -1), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y), brinkColor);
+            Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(Game.Grid.X, 0, 0), brinkColor);
+            Util.DrawGLBox(gl, new Vertex(-1, 1, Game.Grid.Y), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y + 1), brinkColor);
         }
     }
 }
