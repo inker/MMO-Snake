@@ -18,18 +18,7 @@ namespace Snake
         Game Game;
         int TileSize;
         Timer Timer = new Timer();
-
-        int _speed;
-        int Speed
-        {
-            get { return _speed; }
-            set
-            {
-                Timer.Interval = 1000 / value;
-                GLControl.FrameRate = value;
-                _speed = value;
-            }
-        }
+        int InitialInterval;
 
         bool _openGLMode;
         bool OpenGLMode
@@ -41,14 +30,12 @@ namespace Snake
                 {
                     Canvas.Hide();
                     GLControl.Show();
-                    Timer.Stop();
                     ChangeModeButton.Text = "Fall back to GDI";
                 }
                 else
                 {
                     GLControl.Hide();
                     Canvas.Show();
-                    Timer.Start();
                     ChangeModeButton.Text = "Change to OpenGL";
                 }
                 _openGLMode = value;
@@ -77,8 +64,9 @@ namespace Snake
             KeyUp += (s, e) => Game.HandleKeyUp(e.KeyCode);
             Game.Start();
 
-            Speed = Game.InitialSpeed;
+            Timer.Interval = InitialInterval = 1000 / Game.InitialSpeed;
             Timer.Tick += TimerOnTick;
+            Timer.Start();
 
             OpenGLMode = false;
         }
@@ -103,21 +91,24 @@ namespace Snake
         private void TimerOnTick(object sender, EventArgs e)
         {
             UpdateGame();
-            Canvas.Invalidate();
+            if (!OpenGLMode)
+            {
+                Canvas.Invalidate();
+            }
         }
 
         private void UpdateGame()
         {
-            if (Speed > Game.InitialSpeed)
+            if (Timer.Interval < InitialInterval)
             {
                 if (!Game.Nitro)
                 {
-                    Speed = Game.InitialSpeed;
+                    Timer.Interval = InitialInterval;
                 }
             }
             else if (Game.Nitro)
             {
-                Speed <<= 1;
+                Timer.Interval >>= 1;
             }
             Game.Update();
         }
@@ -141,14 +132,14 @@ namespace Snake
             {
                 var tileVec = new Vec2(TileSize - 1, TileSize - 1);
                 var brush = DrawSnake(canvas, Game, tileVec);
-                int textY = 4;
-                canvas.DrawString("You: " + Game.Score, this.Font, brush, new PointF(4, textY));
+                int offsetY = 4;
+                canvas.DrawString("You: " + Game.Score, this.Font, brush, new PointF(4, offsetY));
                 foreach (var pair in Game.Opponents)
                 {
                     var opponent = pair.Value;
                     brush = DrawSnake(canvas, pair.Value, tileVec);
                     var scoreString = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
-                    canvas.DrawString(scoreString, this.Font, brush, new PointF(4, textY += 16));
+                    canvas.DrawString(scoreString, this.Font, brush, new PointF(4, offsetY += 16));
                 }
                 Util.DrawRectangle(canvas, Game.Food.ScaleBy(TileSize), tileVec, System.Drawing.Brushes.White);
             }
@@ -174,7 +165,6 @@ namespace Snake
             }
             return brush;
         }
-
 
         private void GameOnMessage(object sender, EventArgs e)
         {
@@ -211,16 +201,15 @@ namespace Snake
 
         void GLDraw(object sender, RenderEventArgs e)
         {
-            Game.Update();
-            if (Canvas.Visible)
-            {
-                Canvas.Hide();
-            }
-
             if (Game.IsOver)
             {
                 Canvas.Show();
                 return;
+            }
+
+            if (Canvas.Visible)
+            {
+                Canvas.Hide();
             }
 
             OpenGL gl = GLControl.OpenGL;
@@ -245,13 +234,13 @@ namespace Snake
             }
             gl.End();
             var color = Util.DrawGLSnake(gl, Game, Brushes);
-            int y = Canvas.Height + 20;
-            Util.DrawGLScore(gl, y -= 20, "You", Game.Score, color);
+            int offsetY = GLControl.Height - 25;
+            Util.DrawGLScore(gl, offsetY -= 15, "You", Game.Score, color);
             foreach (var pair in Game.Opponents)
             {
                 var opponent = pair.Value;
                 color = Util.DrawGLSnake(gl, opponent, Brushes);
-                Util.DrawGLScore(gl, y -= 20, "Opponent " + pair.Key, opponent.Score, color);
+                Util.DrawGLScore(gl, offsetY -= 15, "Opponent " + pair.Key, opponent.Score, color);
             }
             Util.DrawGLBox(gl, new Vertex(Game.Food.X, 0, Game.Food.Y), new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), new GLColor(1, 1, 1, 1));
             var brinkColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
