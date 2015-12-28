@@ -20,7 +20,7 @@ namespace Snake
     {
         public event EventHandler OnMessage;
         static string ServerURL = "ws://tron-inker.c9.io";
-        WebSocket Socket;
+        WebSocket Socket = new WebSocket(ServerURL);
         Game Game;
         string Message {
             set
@@ -32,40 +32,36 @@ namespace Snake
         public ClientServer(Game game)
         {
             Game = game;
-        }
-
-        public void Connect()
-        {
-            Message = "Connecting to server...";
-            Socket = new WebSocket(ServerURL);
             Socket.Opened += OnSocketOpen;
             Socket.Error += HandleSocketError;
             Socket.DataReceived += HandleData;
             Socket.MessageReceived += HandleMessage;
-            Socket.Closed += OnSocketClosed; ;
-            Socket.Open();
+            Socket.Closed += OnSocketClosed;
         }
 
-        private void OnSocketClosed(object sender, EventArgs e)
+        public void Connect()
         {
-            if (Game.IsOver)
+            CloseSocket();
+            Message = "Connecting to server...";
+            if (Socket.State != WebSocketState.Open)
             {
-                Message = "Connection to server lost. You've probably killed yourself.";
-            }
-            else
-            {
-                Connect();
+                Socket.Open();
             }
         }
 
-        private void OnSocketOpen(object sender, EventArgs e)
+        void OnSocketClosed(object sender, EventArgs e)
+        {
+            Message = "Connection to server lost. You've probably killed yourself.";
+        }
+
+        void OnSocketOpen(object sender, EventArgs e)
         {
             Message = "Connection to server established";
             //Game.Score = 0;
             ReportSituation();
         }
 
-        private void HandleSocketError(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
+        void HandleSocketError(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
             Message = "Error while connecting to server (" + e.Exception.Message + "). Retrying...";
             if (Socket.State == WebSocketState.Open)
@@ -75,12 +71,12 @@ namespace Snake
             Connect();
         }
 
-        private void HandleData(object sender, DataReceivedEventArgs e)
+        void HandleData(object sender, DataReceivedEventArgs e)
         {
             throw new NotImplementedException();
         }
 
-        private void HandleMessage(object sender, MessageReceivedEventArgs e)
+        void HandleMessage(object sender, MessageReceivedEventArgs e)
         {
             // remake to:
             // 0 - id
@@ -111,7 +107,8 @@ namespace Snake
             {
                 byte[] bytes = msg.Select(c => (byte)c).ToArray();
                 byte id = bytes[0];
-                int score = (bytes[1] << 8) | bytes[2];
+                int score = bytes[1];
+                score = (score << 8) | bytes[2];
                 int color = bytes[3];
                 bool nitro = bytes[4] > 0;
 
@@ -127,8 +124,8 @@ namespace Snake
         public void ReportSituation()
         {
             var packet = new List<byte>(Game.Snake.Count << 1);
-            packet.Add((byte)Game.Score);
             packet.Add((byte)(Game.Score >> 8));
+            packet.Add((byte)Game.Score);
             packet.Add((byte)Game.ColorNum);
             packet.Add((byte)(Game.Nitro ? 1 : 0));
             foreach (var p in Game.Snake)

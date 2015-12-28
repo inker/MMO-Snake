@@ -18,7 +18,7 @@ namespace Snake
         Game Game;
         int TileSize;
         Timer Timer = new Timer();
-        int InitialInterval;
+        int InitialInterval = 1000 / Game.InitialSpeed;
 
         bool _openGLMode;
         bool OpenGLMode
@@ -53,6 +53,8 @@ namespace Snake
             Canvas.Height = Grid.Y * TileSize;
             Width = Canvas.Width + 50;
             Height = Canvas.Height + 80;
+            //GLControl.AutoScaleMode = AutoScaleMode.Dpi;
+            //GLControl.Scale(new SizeF(2f, 2f));
 
             Canvas.Paint += Repaint;
 
@@ -64,7 +66,7 @@ namespace Snake
             KeyUp += (s, e) => Game.HandleKeyUp(e.KeyCode);
             Game.Start();
 
-            Timer.Interval = InitialInterval = 1000 / Game.InitialSpeed;
+            Timer.Interval = InitialInterval;
             Timer.Tick += TimerOnTick;
             Timer.Start();
 
@@ -121,7 +123,7 @@ namespace Snake
             {
                 int centerWidth = Canvas.Width / 2;
                 int y = 0;
-                foreach (var s in new string[] { "Game over", "Score: " + Game.Score, "Press Space to restart the game" })
+                foreach (var s in new string[] { "Game over", "Score: " + Game.Score, "Press Enter to restart the game" })
                 {
                     SizeF msgSize = canvas.MeasureString(s, Font);
                     var msgPoint = new PointF(centerWidth - msgSize.Width / 2, y += 16);
@@ -185,8 +187,10 @@ namespace Snake
 
         private void GLInitialized(object sender, EventArgs e)
         {
+
             OpenGL gl = GLControl.OpenGL;
             gl.ClearColor(0, 0, 0, 0);
+            Util.AddAntialiasing(gl);
         }
 
         private void GLResized(object sender, EventArgs e)
@@ -217,10 +221,13 @@ namespace Snake
             gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity();
-
+            //gl.Scale(0.5f, 0.5f, 0.5f);
+            var a = new SharpGL.RenderContextProviders.FBORenderContextProvider();
             gl.Translate((-Game.Grid.X >> 1) - 10, -5, -20);
-            gl.LineWidth(0.25f);
+            
+            gl.LineWidth(1f);
             gl.Color(0.1f, 0.1f, 0.1f, 1f);
+
             gl.Begin(OpenGL.GL_LINES);
             for (int i = 0; i <= Game.Grid.X; ++i)
             {

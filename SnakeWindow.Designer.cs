@@ -54,12 +54,13 @@ namespace Snake
             this.Canvas.TabIndex = 0;
             this.Canvas.TabStop = false;
             // 
-            // openGLControl
+            // GLControl
             // 
             this.GLControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.GLControl.DrawFPS = true;
+            this.GLControl.FrameRate = 40;
             this.GLControl.Location = new System.Drawing.Point(0, 0);
-            this.GLControl.Name = "openGLControl";
+            this.GLControl.Name = "GLControl";
             this.GLControl.OpenGLVersion = SharpGL.Version.OpenGLVersion.OpenGL2_1;
             this.GLControl.RenderContextType = SharpGL.RenderContextType.FBO;
             this.GLControl.RenderTrigger = SharpGL.RenderTrigger.TimerBased;
@@ -85,20 +86,20 @@ namespace Snake
             this.StatusLabel.Size = new System.Drawing.Size(118, 17);
             this.StatusLabel.Text = "toolStripStatusLabel1";
             // 
-            // menuStrip1
+            // MenuStrip
             // 
             this.MenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ChangeModeButton});
             this.MenuStrip.Location = new System.Drawing.Point(0, 0);
-            this.MenuStrip.Name = "menuStrip1";
+            this.MenuStrip.Name = "MenuStrip";
             this.MenuStrip.Size = new System.Drawing.Size(568, 24);
             this.MenuStrip.TabIndex = 2;
             this.MenuStrip.Text = "menuStrip1";
             // 
-            // toolStripMenuItem1
+            // ChangeModeButton
             // 
-            this.ChangeModeButton.Name = "toolStripMenuItem1";
-            this.ChangeModeButton.Size = new System.Drawing.Size(125, 20);
+            this.ChangeModeButton.Name = "ChangeModeButton";
+            this.ChangeModeButton.Size = new System.Drawing.Size(120, 20);
             this.ChangeModeButton.Text = "Change to OpenGL";
             this.ChangeModeButton.Click += new System.EventHandler(this.OnChangeModeButtonClick);
             // 

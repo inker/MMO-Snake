@@ -19,6 +19,18 @@ namespace Snake
 
         public static GLColor DrawingColorToGLColor(Color color) => new GLColor(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
 
+        public static void AddAntialiasing(OpenGL gl)
+        {
+            gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
+            gl.Enable(OpenGL.GL_BLEND);
+            gl.Hint(OpenGL.GL_POINT_SMOOTH_HINT, OpenGL.GL_NICEST);
+            gl.Hint(OpenGL.GL_LINE_SMOOTH_HINT, OpenGL.GL_NICEST);
+            gl.Hint(OpenGL.GL_POLYGON_SMOOTH_HINT, OpenGL.GL_NICEST);
+            gl.Enable(OpenGL.GL_POINT_SMOOTH);
+            gl.Enable(OpenGL.GL_LINE_SMOOTH);
+            gl.Enable(OpenGL.GL_POLYGON_SMOOTH);
+        }
+
         public static void DrawGLBox(OpenGL gl, Vertex a, Vertex b, GLColor color)
         {
             Vertex v1 = new Vertex(a.X, a.Y, b.Z), v2 = new Vertex(a.X, b.Y, a.Z), v3 = new Vertex(a.X, b.Y, b.Z),
