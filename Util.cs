@@ -88,7 +88,7 @@ namespace Snake
 
         public static void DrawGLScore(OpenGL gl, int y, string playerName, int score,GLColor color)
         {
-            gl.DrawText(10, y, color.R, color.G, color.B, "Arial", 11, playerName + ": " + score);
+            gl.DrawText(10, y, color.R, color.G, color.B, "Arial", 16, playerName + ": " + score);
         }
 
     }

@@ -28,6 +28,9 @@ namespace Snake
             {
                 if (value)
                 {
+                    this.TopMost = true;
+                    //this.FormBorderStyle = FormBorderStyle.None;
+                    this.WindowState = FormWindowState.Maximized;
                     Canvas.Hide();
                     GLControl.Show();
                     ChangeModeButton.Text = "Fall back to GDI";
@@ -35,6 +38,9 @@ namespace Snake
                 else
                 {
                     GLControl.Hide();
+                    this.TopMost = false;
+                    //this.FormBorderStyle = FormBorderStyle.None;
+                    this.WindowState = FormWindowState.Normal;
                     Canvas.Show();
                     ChangeModeButton.Text = "Change to OpenGL";
                 }
@@ -205,18 +211,19 @@ namespace Snake
 
         void GLDraw(object sender, RenderEventArgs e)
         {
+            OpenGL gl = GLControl.OpenGL;
             if (Game.IsOver)
             {
-                Canvas.Show();
+                gl.ClearColor(0, 0, 0, 0);
+                gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
+                var y = 25;
+                foreach (var s in new string[] { "Game over", "Score: " + Game.Score, "Press Enter to restart the game" })
+                {
+                    gl.DrawText(GLControl.Width / 2 - s.Length * 3, GLControl.Height - (y += 25), 1, 1, 1, "Arial", 15, s);
+                }
                 return;
             }
 
-            if (Canvas.Visible)
-            {
-                Canvas.Hide();
-            }
-
-            OpenGL gl = GLControl.OpenGL;
             gl.Enable(OpenGL.GL_BLEND);
             gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
@@ -244,13 +251,13 @@ namespace Snake
             }
             gl.End();
             var color = Util.DrawGLSnake(gl, Game, Brushes);
-            int offsetY = GLControl.Height - 25;
-            Util.DrawGLScore(gl, offsetY -= 15, "You", Game.Score, color);
+            int offsetY = GLControl.Height - 30;
+            Util.DrawGLScore(gl, offsetY -= 25, "You", Game.Score, color);
             foreach (var pair in Game.Opponents)
             {
                 var opponent = pair.Value;
                 color = Util.DrawGLSnake(gl, opponent, Brushes);
-                Util.DrawGLScore(gl, offsetY -= 15, "Opponent " + pair.Key, opponent.Score, color);
+                Util.DrawGLScore(gl, offsetY -= 25, "Opponent " + pair.Key, opponent.Score, color);
             }
             Util.DrawGLBox(gl, new Vertex(Game.Food.X, 0, Game.Food.Y), new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), new GLColor(1, 1, 1, 1));
             var brinkColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
