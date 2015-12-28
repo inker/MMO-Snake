@@ -61,7 +61,6 @@ namespace Snake
                     gl.Vertex(v);
                 }
             }
-
             gl.End();
         }
 

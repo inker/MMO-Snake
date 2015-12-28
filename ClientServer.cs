@@ -73,17 +73,29 @@ namespace Snake
 
         void HandleData(object sender, DataReceivedEventArgs e)
         {
-            throw new NotImplementedException();
-        }
-
-        void HandleMessage(object sender, MessageReceivedEventArgs e)
-        {
             // remake to:
             // 0 - id
             // 1 - score
             // 2 - color
             // 3 - action (0 - move, 1 - exit, 
             // 4~ - info
+            var bytes = e.Data;
+            byte id = bytes[0];
+            int score = bytes[1];
+            score = (score << 8) | bytes[2];
+            int color = bytes[3];
+            bool nitro = bytes[4] > 0;
+
+            var opponent = Game.GetOrMakePlayer(id, color, score, nitro);
+            var oppSnake = opponent.Snake;
+            for (int i = 4; i < bytes.Length;)
+            {
+                oppSnake.Add(new Vec2(bytes[++i], bytes[++i]));
+            }
+        }
+
+        void HandleMessage(object sender, MessageReceivedEventArgs e)
+        {
             var msg = e.Message;
             if (msg.StartsWith("food:"))
             {
@@ -102,22 +114,6 @@ namespace Snake
             {
                 byte id = byte.Parse(msg.Substring(5));
                 Game.Opponents.Remove(id);
-            }
-            else
-            {
-                byte[] bytes = msg.Select(c => (byte)c).ToArray();
-                byte id = bytes[0];
-                int score = bytes[1];
-                score = (score << 8) | bytes[2];
-                int color = bytes[3];
-                bool nitro = bytes[4] > 0;
-
-                Player opponent = Game.GetOrMakePlayer(id, color, score, nitro);
-                var oppSnake = opponent.Snake;
-                for (int i = 5; i < bytes.Length; i += 2)
-                {
-                    oppSnake.Add(new Vec2(bytes[i], bytes[i + 1]));
-                }
             }
         }
 

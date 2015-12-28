@@ -1,5 +1,4 @@
-﻿using System;
-using SharpGL;
+﻿using SharpGL;
 using System.Windows.Forms;
 
 namespace Snake
