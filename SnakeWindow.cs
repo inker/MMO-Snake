@@ -223,7 +223,7 @@ namespace Snake
             gl.LoadIdentity();
             //gl.Scale(0.5f, 0.5f, 0.5f);
             var a = new SharpGL.RenderContextProviders.FBORenderContextProvider();
-            gl.Translate((-Game.Grid.X >> 1) - 10, -5, -20);
+            gl.Translate((-Game.Grid.X >> 1) + 5 - (float)Game.Snake[0].X / 5, 10-((float)Game.Snake[0].Y / 5), -20);
             
             gl.LineWidth(1f);
             gl.Color(0.1f, 0.1f, 0.1f, 1f);

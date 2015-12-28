@@ -88,9 +88,9 @@ namespace Snake
 
             var opponent = Game.GetOrMakePlayer(id, color, score, nitro);
             var oppSnake = opponent.Snake;
-            for (int i = 4; i < bytes.Length;)
+            for (int i = 5; i < bytes.Length; i += 2)
             {
-                oppSnake.Add(new Vec2(bytes[++i], bytes[++i]));
+                oppSnake.Add(new Vec2(bytes[i], bytes[i + 1]));
             }
         }
 
