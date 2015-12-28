@@ -90,7 +90,7 @@ namespace Snake
             int color = bytes[3];
             bool nitro = bytes[4] > 0;
 
-            var opponent = Game.GetOrMakePlayer(id, color, score, nitro);
+            var opponent = Game.GetOrMakeOpponent(id, color, score, nitro);
             var oppSnake = opponent.Snake;
             for (int i = 5; i < bytes.Length; i += 2)
             {

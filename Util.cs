@@ -39,7 +39,7 @@ namespace Snake
             Vertex v1 = new Vertex(a.X, a.Y, b.Z), v2 = new Vertex(a.X, b.Y, a.Z), 
                 v3 = new Vertex(a.X, b.Y, b.Z), v4 = new Vertex(b.X, a.Y, a.Z), 
                 v5 = new Vertex(b.X, a.Y, b.Z), v6 = new Vertex(b.X, b.Y, a.Z);
-            var minZ = Math.Max(a.Z, b.Z);
+            var maxZ = Math.Max(a.Z, b.Z);
             var triangleVertices = new Vertex[][] {
                 new Vertex[] { a, v1, v3 }, new Vertex[] { a, v2, v3 },
                 new Vertex[] { v4, v5, b }, new Vertex[] { v4, v6, b },
@@ -53,19 +53,13 @@ namespace Snake
             {
                 var vertices = triangleVertices[i];
                 var resultingColor = new float[] { color.R, color.G, color.B };
-                if (vertices[0].X == vertices[1].X && vertices[0].X == vertices[2].X)
+                float c = vertices[0].X == vertices[1].X && vertices[0].X == vertices[2].X
+                    ? 0.25f : (vertices[0].Z != maxZ || vertices[1].Z != maxZ || vertices[2].Z != maxZ) 
+                    ? 0.5f : 1f;
+
+                for (int j = 0; j < 3; ++j)
                 {
-                    for (int j = 0; j < 3; ++j)
-                    {
-                        resultingColor[j] = Math.Max(resultingColor[j] - 0.9f, 0);
-                    }
-                }
-                else if (vertices[0].Z != minZ || vertices[1].Z != minZ || vertices[2].Z != minZ)
-                {
-                    for (int j = 0; j < 3; ++j)
-                    {
-                        resultingColor[j] = Math.Max(resultingColor[j] - 0.5f, 0);
-                    }
+                    resultingColor[j] = Math.Max(resultingColor[j] * c, 0);
                 }
 
                 gl.Color(resultingColor);
