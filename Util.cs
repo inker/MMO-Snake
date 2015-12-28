@@ -7,17 +7,20 @@ namespace Snake
 {
     public static class Util
     {
-        public static Color BrightenColor(Color color) => Color.FromArgb(Math.Min(color.R + 128, 255), Math.Min(color.G + 128, 255), Math.Min(color.B + 128, 255));
-        public static SolidBrush BrightenBrush(SolidBrush brush) => new SolidBrush(BrightenColor(brush.Color));
+        public static Color BrightenColor(Color color) => 
+            Color.FromArgb(Math.Min(color.R + 128, 255), Math.Min(color.G + 128, 255), Math.Min(color.B + 128, 255));
 
+        public static SolidBrush BrightenBrush(SolidBrush brush) => 
+            new SolidBrush(BrightenColor(brush.Color));
 
-        public static void DrawRectangle(Graphics canvas, Vec2 topLeft, Vec2 size, Brush brush)
-        {
-            var rect = new Rectangle(topLeft.X, topLeft.Y, size.X, size.Y);
-            canvas.FillRectangle(brush, rect);
-        }
+        public static void DrawRectangle(Graphics canvas, Vec2 topLeft, Vec2 size, Brush brush) =>
+            canvas.FillRectangle(brush, new Rectangle(topLeft.X, topLeft.Y, size.X, size.Y));
 
-        public static GLColor DrawingColorToGLColor(Color color) => new GLColor(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
+        public static GLColor DrawingColorToGLColor(Color color) =>
+            new GLColor(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
+
+        public static void DrawGLScore(OpenGL gl, int y, string playerName, int score, GLColor color) =>
+            gl.DrawText(10, y, color.R, color.G, color.B, "Arial", 16, playerName + ": " + score);
 
         public static void AddAntialiasing(OpenGL gl)
         {
@@ -33,29 +36,40 @@ namespace Snake
 
         public static void DrawGLBox(OpenGL gl, Vertex a, Vertex b, GLColor color)
         {
-            Vertex v1 = new Vertex(a.X, a.Y, b.Z), v2 = new Vertex(a.X, b.Y, a.Z), v3 = new Vertex(a.X, b.Y, b.Z),
-                v4 = new Vertex(b.X, a.Y, a.Z), v5 = new Vertex(b.X, a.Y, b.Z), v6 = new Vertex(b.X, b.Y, a.Z);
+            Vertex v1 = new Vertex(a.X, a.Y, b.Z), v2 = new Vertex(a.X, b.Y, a.Z), 
+                v3 = new Vertex(a.X, b.Y, b.Z), v4 = new Vertex(b.X, a.Y, a.Z), 
+                v5 = new Vertex(b.X, a.Y, b.Z), v6 = new Vertex(b.X, b.Y, a.Z);
+            var minZ = Math.Max(a.Z, b.Z);
             var triangleVertices = new Vertex[][] {
-                new Vertex[] { a, v1, v3 }, new Vertex[] { a, v2, v3 }, new Vertex[] { v4, v5, b }, new Vertex[] { v4, v6, b },
-                new Vertex[] { a, v1, v5 }, new Vertex[] { a, v4, v5 }, new Vertex[] { v2, v3, b }, new Vertex[] { v2, v6, b },
-                new Vertex[] { v1, v2, v6 }, new Vertex[] { v1, v4, v6 }, new Vertex[] { v1, v3, b }, new Vertex[] { v1, v5, b }
+                new Vertex[] { a, v1, v3 }, new Vertex[] { a, v2, v3 },
+                new Vertex[] { v4, v5, b }, new Vertex[] { v4, v6, b },
+                new Vertex[] { a, v1, v5 }, new Vertex[] { a, v4, v5 },
+                new Vertex[] { v2, v3, b }, new Vertex[] { v2, v6, b },
+                new Vertex[] { v1, v2, v6 }, new Vertex[] { v1, v4, v6 },
+                new Vertex[] { v1, v3, b }, new Vertex[] { v1, v5, b }
             };
             gl.Begin(OpenGL.GL_TRIANGLES);
             for (int i = 0; i < triangleVertices.Length; ++i)
             {
                 var vertices = triangleVertices[i];
-                if (i < 4)
+                var resultingColor = new float[] { color.R, color.G, color.B };
+                if (vertices[0].X == vertices[1].X && vertices[0].X == vertices[2].X)
                 {
-                    gl.Color(Math.Max(color.R - 0.75f, 0), Math.Max(color.G - 0.75f, 0), Math.Max(color.B - 0.75f, 0));
+                    for (int j = 0; j < 3; ++j)
+                    {
+                        resultingColor[j] = Math.Max(resultingColor[j] - 0.9f, 0);
+                    }
                 }
-                else if (i < 8)
+                else if (vertices[0].Z != minZ || vertices[1].Z != minZ || vertices[2].Z != minZ)
                 {
-                    gl.Color(Math.Max(color.R - 0.5f, 0), Math.Max(color.G - 0.5f, 0), Math.Max(color.B - 0.5f, 0));
+                    for (int j = 0; j < 3; ++j)
+                    {
+                        resultingColor[j] = Math.Max(resultingColor[j] - 0.5f, 0);
+                    }
                 }
-                else
-                {
-                    gl.Color(color);
-                }
+
+                gl.Color(resultingColor);
+
                 foreach (var v in vertices)
                 {
                     gl.Vertex(v);
@@ -85,11 +99,5 @@ namespace Snake
             }
             return color;
         }
-
-        public static void DrawGLScore(OpenGL gl, int y, string playerName, int score,GLColor color)
-        {
-            gl.DrawText(10, y, color.R, color.G, color.B, "Arial", 16, playerName + ": " + score);
-        }
-
     }
 }

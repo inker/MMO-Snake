@@ -193,7 +193,6 @@ namespace Snake
 
         private void GLInitialized(object sender, EventArgs e)
         {
-
             OpenGL gl = GLControl.OpenGL;
             gl.ClearColor(0, 0, 0, 0);
             Util.AddAntialiasing(gl);
@@ -216,16 +215,14 @@ namespace Snake
             {
                 gl.ClearColor(0, 0, 0, 0);
                 gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-                var y = 25;
+                var y = 100;
                 foreach (var s in new string[] { "Game over", "Score: " + Game.Score, "Press Enter to restart the game" })
                 {
-                    gl.DrawText(GLControl.Width / 2 - s.Length * 3, GLControl.Height - (y += 25), 1, 1, 1, "Arial", 15, s);
+                    gl.DrawText(GLControl.Width / 2 - 50 - s.Length * 7, GLControl.Height - (y += 50), 1, 1, 1, "Arial", 30, s);
                 }
                 return;
             }
 
-            gl.Enable(OpenGL.GL_BLEND);
-            gl.BlendFunc(OpenGL.GL_SRC_ALPHA, OpenGL.GL_ONE_MINUS_SRC_ALPHA);
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity();
             //gl.Scale(0.5f, 0.5f, 0.5f);
