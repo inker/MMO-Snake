@@ -17,7 +17,18 @@ namespace Snake
             remove { Server.OnMessage -= value; }
         }
 
-        public Vec2 Grid;
+        public event EventHandler GridResize;
+
+        private Vec2 _grid = new Vec2(70, 50);
+        public Vec2 Grid
+        {
+            get { return _grid; }
+            set
+            {
+                _grid = value;
+                GridResize(this, new EventArgs());
+            }
+        }
         public bool IsOver;
         public Vec2 Food;
         public Dictionary<byte, Player> Opponents = new Dictionary<byte, Player>();
@@ -37,9 +48,8 @@ namespace Snake
         int Direction = 39; // Left = 37, Up = 38, Right = 39, Down = 40
         bool FreeNitro;
 
-        public Game(Vec2 grid) : base(new List<Vec2>(), 0)
+        public Game() : base(new List<Vec2>(), 0)
         {
-            Grid = grid;
             Server = new ClientServer(this);
         }
 

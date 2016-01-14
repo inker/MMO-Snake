@@ -49,7 +49,7 @@ namespace Snake
             this.Canvas.Location = new System.Drawing.Point(13, 13);
             this.Canvas.Margin = new System.Windows.Forms.Padding(4);
             this.Canvas.Name = "Canvas";
-            this.Canvas.Size = new System.Drawing.Size(320, 240);
+            this.Canvas.Size = new System.Drawing.Size(104, 65);
             this.Canvas.TabIndex = 0;
             this.Canvas.TabStop = false;
             // 

@@ -51,21 +51,18 @@ namespace Snake
         public SnakeWindow()
         {
             InitializeComponent();
-            TileSize = Math.Min(MaxWindowSize.X, MaxWindowSize.Y) / GridSize;
-            var Grid = new Vec2(MaxWindowSize.X / TileSize, MaxWindowSize.Y / TileSize);
 
-            Canvas.Top = MenuStrip.Height;
-            Canvas.Width = Grid.X * TileSize;
-            Canvas.Height = Grid.Y * TileSize;
-            Width = Canvas.Width + 50;
-            Height = Canvas.Height + 80;
             //GLControl.AutoScaleMode = AutoScaleMode.Dpi;
             //GLControl.Scale(new SizeF(2f, 2f));
 
+            Game = new Game();
+            Game.OnMessage += GameOnMessage;
+            Game.GridResize += (s, e) => ResizeCanvas();
+
+            ResizeCanvas();
+
             Canvas.Paint += Repaint;
 
-            Game = new Game(Grid);
-            Game.OnMessage += GameOnMessage;
             KeyPreview = true;
             GLControl.PreviewKeyDown += GLControlOnPreviewKeyDown;
             KeyDown += HandleKeyDown;
@@ -77,6 +74,21 @@ namespace Snake
             Timer.Start();
 
             OpenGLMode = false;
+        }
+
+        private void ResizeCanvas()
+        {
+            TileSize = Math.Min(MaxWindowSize.X / Game.Grid.X, MaxWindowSize.Y / Game.Grid.Y);
+            Canvas.Top = MenuStrip.Height;
+            try
+            {
+                var grid = Game.Grid;
+                Canvas.Width = grid.X * TileSize;
+                Canvas.Height = grid.Y * TileSize;
+                Width = Canvas.Width + 50;
+                Height = Canvas.Height + 80;
+            }
+            catch (Exception e) { }
         }
 
         private void GLControlOnPreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
@@ -149,7 +161,7 @@ namespace Snake
                     var scoreString = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
                     canvas.DrawString(scoreString, this.Font, brush, new PointF(4, offsetY += 16));
                 }
-                Util.DrawRectangle(canvas, Game.Food.ScaleBy(TileSize), tileVec, System.Drawing.Brushes.White);
+                Util.DrawRectangle(canvas, Game.Food * TileSize, tileVec, System.Drawing.Brushes.White);
             }
         }
 
@@ -164,7 +176,7 @@ namespace Snake
             {
                 foreach (var part in player.Snake)
                 {
-                    Util.DrawRectangle(canvas, part.ScaleBy(TileSize), partSize, brush);
+                    Util.DrawRectangle(canvas, part * TileSize, partSize, brush);
                 }
             }
             catch (Exception ex)
@@ -178,7 +190,7 @@ namespace Snake
         {
             try
             {
-                StatusLabel.Text = e.ToString();
+                StatusLabel.Text = (e as MyEventArgs).Msg;
             }
             catch (InvalidOperationException ex)
             {
@@ -204,7 +216,8 @@ namespace Snake
             gl.MatrixMode(OpenGL.GL_PROJECTION);
             gl.LoadIdentity();
             gl.Perspective(90.0f, (double)Width / (double)Height, 0.01, 1000.0);
-            gl.LookAt(1, 25, 32, 0, 0, 0, 0, 1, 0);
+            float y = Game != null && Game.Grid != null ? Game.Grid.Y : 150;
+            gl.LookAt(1, 25 + (y - 50) * 0.5, 32 + (y - 50) * 1.2, 0, 0, 0, 0, 1, 0);
             gl.MatrixMode(OpenGL.GL_MODELVIEW);
         }
 

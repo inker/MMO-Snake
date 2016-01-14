@@ -12,8 +12,7 @@ namespace Snake
             Msg = message;
         }
 
-        public override string ToString() => Msg;      
-        string Msg { get; }
+        public string Msg { get; }
     }
 
     public class ClientServer
@@ -35,7 +34,8 @@ namespace Snake
             Socket.Opened += OnSocketOpen;
             Socket.Error += HandleSocketError;
             Socket.DataReceived += HandleData;
-            Socket.MessageReceived += HandleMessage;
+            //Socket.MessageReceived += HandleMessage;
+            Socket.DataReceived += HandleData;
             Socket.Closed += OnSocketClosed;
         }
 
@@ -77,73 +77,85 @@ namespace Snake
 
         void HandleData(object sender, DataReceivedEventArgs e)
         {
-            // remake to:
-            // 0 - id
-            // 1 - score
-            // 2 - color
-            // 3 - action (0 - move, 1 - exit, 
-            // 4~ - info
-            var bytes = e.Data;
-            byte id = bytes[0];
-            int score = bytes[1];
-            score = (score << 8) | bytes[2];
-            int color = bytes[3];
-            bool nitro = bytes[4] > 0;
+            // 0 - action (2 - move, 0 - enter, 1 - exit, 3 - food, 4 - grid size, 5 - color
+            // 1 - id
+            // 2, 3 - score
+            // 4 - color
+            // 5 - nitro
+            // 6~ - info
+            var data = e.Data;
+            byte id = data[1];
 
-            var opponent = Game.GetOrMakeOpponent(id, color, score, nitro);
-            var oppSnake = opponent.Snake;
-            for (int i = 5; i < bytes.Length; i += 2)
+            switch (data[0])
             {
-                oppSnake.Add(new Vec2(bytes[i], bytes[i + 1]));
+                case 0:
+                    break;
+                case 1:
+                    Game.Opponents.Remove(id);
+                    break;
+                case 2:
+                    int score = data[2];
+                    score = (score << 8) | data[3];
+                    int color = data[4];
+                    bool nitro = data[5] > 0;
+                    var opponent = Game.GetOrMakeOpponent(id, color, score, nitro);
+                    var oppSnake = opponent.Snake;
+                    for (int i = 6; i < data.Length; i += 2)
+                    {
+                        oppSnake.Add(new Vec2(data[i], data[i + 1]));
+                    }
+                    break;
+                case 3:
+                    Game.Food.X = data[6];
+                    Game.Food.Y = data[7];
+                    break;
+                case 4:
+                    // assign new value to trigger setter
+                    Game.Grid = new Vec2(data[6], data[7]);
+                    break;
+                case 5:
+                    Game.ColorNum = data[6];
+                    break;
+                default:
+                    break;
             }
         }
 
-        void HandleMessage(object sender, MessageReceivedEventArgs e)
+        byte[] MakePacket(byte action, int size)
         {
-            var msg = e.Message;
-            if (msg.StartsWith("food:"))
-            {
-                var arr = msg.Substring(5)
-                    .Split(',')
-                    .Select(i => byte.Parse(i))
-                    .ToArray();
-                Game.Food.X = arr[0];
-                Game.Food.Y = arr[1];
-            }
-            else if (msg.StartsWith("color:"))
-            {
-                Game.ColorNum = int.Parse(msg.Substring(6));
-            }
-            else if (msg.StartsWith("exit:"))
-            {
-                byte id = byte.Parse(msg.Substring(5));
-                Game.Opponents.Remove(id);
-            }
+            var packet = new byte[size];
+            packet[0] = action;
+            packet[1] = 255; // fake id
+            packet[2] = (byte)(Game.Score >> 8);
+            packet[3] = (byte)Game.Score;
+            packet[4] = (byte)Game.ColorNum;
+            packet[5] = (byte)(Game.Nitro ? 1 : 0);
+            return packet;
         }
 
         public void ReportSituation()
         {
-            var packet = new List<byte>(Game.Snake.Count << 1);
-            packet.Add((byte)(Game.Score >> 8));
-            packet.Add((byte)Game.Score);
-            packet.Add((byte)Game.ColorNum);
-            packet.Add((byte)(Game.Nitro ? 1 : 0));
+            int i = 6;
+            var packet = MakePacket(2, i + Game.Snake.Count * 2);
             foreach (var p in Game.Snake)
             {
-                packet.Add((byte)p.X);
-                packet.Add((byte)p.Y);
+                packet[i++] = (byte)p.X;
+                packet[i++] = (byte)p.Y;
             }
             if (Socket.State == WebSocketState.Open)
             {
-                Socket.Send(packet.ToArray(), 0, packet.Count);
+                Socket.Send(packet, 0, packet.Length);
             }
         }
 
         public void ReportNewFood()
         {
             if (Socket.State == WebSocketState.Open)
-            {
-                Socket.Send(string.Format("food:{0},{1}", Game.Food.X, Game.Food.Y));
+            { 
+                var packet = MakePacket(3, 8);
+                packet[6] = (byte)Game.Food.X;
+                packet[7] = (byte)Game.Food.Y;
+                Socket.Send(packet, 0, packet.Length);
             }
         }
 

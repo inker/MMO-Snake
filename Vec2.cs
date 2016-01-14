@@ -20,6 +20,6 @@
 
         public bool Equals(Vec2 v) => X == v.X && Y == v.Y;
         public static Vec2 operator+(Vec2 a, Vec2 b) => new Vec2(a.X + b.X, a.Y + b.Y);
-        public Vec2 ScaleBy(int a) => new Vec2(X * a, Y * a);
+        public static Vec2 operator*(Vec2 v, int a) => new Vec2(v.X * a, v.Y * a);
     }
 }
