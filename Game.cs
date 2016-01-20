@@ -61,9 +61,8 @@ namespace Snake
             Direction = 39;
             Nitro = false;
             FreeNitro = Score == 0;
-            var rand = new Random();
-            var x = rand.Next(InitialSnakeLength, Grid.X - InitialSnakeLength * 2);
-            var y = rand.Next(InitialSnakeLength, Grid.Y - InitialSnakeLength * 2);
+            var x = Util.Random(InitialSnakeLength, Grid.X - InitialSnakeLength * 2);
+            var y = Util.Random(InitialSnakeLength, Grid.Y - InitialSnakeLength * 2);
             MakeSnake(new Vec2(x, y));
             Server.Connect();
             GenerateFood();
@@ -80,8 +79,11 @@ namespace Snake
 
         private void GenerateFood()
         {
-            Random random = new Random();
-            Food = new Vec2(random.Next(0, Grid.X), random.Next(0, Grid.Y));
+            do
+            {
+                Food = new Vec2(Util.Random(0, Grid.X), Util.Random(0, Grid.Y));
+            }
+            while (Food.X == Snake[0].X || Food.Y == Snake[0].Y);
         }
 
         public void Update()
@@ -89,15 +91,13 @@ namespace Snake
             if (IsOver)
             {
                 Server.CloseSocket();
+                return;
             }
-            else
+            Server.ReportSituation();
+            UpdateSnake();
+            if (Nitro && Score > 0 && ++Step % 2 > 0 && !FreeNitro && (Score -= NitroPenalty) < 1)
             {
-                Server.ReportSituation();
-                UpdateSnake();
-                if (Nitro && Score > 0 && ++Step % 2 > 0 && !FreeNitro && (Score -= NitroPenalty) < 1)
-                {
-                    Nitro = false;
-                }
+                Nitro = false;
             }
         }
 

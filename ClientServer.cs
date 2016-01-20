@@ -1,18 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using WebSocket4Net;
 
 namespace Snake
 {
-    class MyEventArgs : EventArgs
+    class MessageEventArgs : EventArgs
     {
-        public MyEventArgs(string message) : base()
+        public MessageEventArgs(string message) : base()
         {
-            Msg = message;
+            Message = message;
         }
 
-        public string Msg { get; }
+        public string Message { get; }
     }
 
     public class ClientServer
@@ -24,7 +22,7 @@ namespace Snake
         string Message {
             set
             {
-                OnMessage(this, new MyEventArgs(value));
+                OnMessage(this, new MessageEventArgs(value));
             }
         }
 

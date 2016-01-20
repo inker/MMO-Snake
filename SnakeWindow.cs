@@ -9,8 +9,7 @@ namespace Snake
 {
     public partial class SnakeWindow : Form
     {
-        static Vec2 MaxWindowSize = new Vec2(700, 500);
-        static int GridSize = 50;
+        static Vec2 MaxWindowSize = new Vec2(900, 500);
         static SolidBrush[] Brushes = new uint[] {
             0xff0000, 0x0040ff, 0x008000, 0xffff00, 0xff8000, 0x00ffff, 0xff00ff
         }.Select(i => new SolidBrush(Color.FromArgb((int)(i + 0xff000000)))).ToArray();
@@ -190,7 +189,7 @@ namespace Snake
         {
             try
             {
-                StatusLabel.Text = (e as MyEventArgs).Msg;
+                StatusLabel.Text = (e as MessageEventArgs).Message;
             }
             catch (InvalidOperationException ex)
             {
@@ -247,7 +246,6 @@ namespace Snake
             
             gl.LineWidth(1f);
             gl.Color(0.1f, 0.1f, 0.1f, 1f);
-
             gl.Begin(OpenGL.GL_LINES);
             for (int i = 0; i <= Game.Grid.X; ++i)
             {

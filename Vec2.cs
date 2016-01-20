@@ -2,15 +2,8 @@
 {
     public class Vec2
     {
-        public int X { get; set; } // X Coordinate for Snake Part
-        public int Y { get; set; } // Y Coordinate for Snake Part
-
-        // Constructor
-        public Vec2()
-        {
-            X = 0;
-            Y = 0;
-        }
+        public int X { get; set; } = 0;
+        public int Y { get; set; } = 0;
 
         public Vec2(int x, int y)
         {
