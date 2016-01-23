@@ -19,9 +19,6 @@ namespace Snake
         public static void DrawRectangle(Graphics canvas, Vec2 topLeft, Vec2 size, Brush brush) =>
             canvas.FillRectangle(brush, MakeRectangle(topLeft, size));
 
-        public static GLColor DrawingColorToGLColor(Color color) =>
-            new GLColor(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
-
         public static void DrawGLScore(OpenGL gl, int y, string playerName, int score, GLColor color) =>
             gl.DrawText(10, y, color.R, color.G, color.B, "Arial", 16, playerName + ": " + score);
 
@@ -81,7 +78,5 @@ namespace Snake
             gl.DisableClientState(OpenGL.GL_COLOR_ARRAY);                   // activate vertex array
             gl.Translate(-coordinates.X, -coordinates.Y, -coordinates.Z);
         }
-
-
     }
 }
