@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using WebSocket4Net;
 
 namespace Snake
@@ -18,31 +19,33 @@ namespace Snake
         public event EventHandler OnMessage;
         static string ServerURL = "ws://tron-inker.c9.io";
         WebSocket Socket = new WebSocket(ServerURL);
-        Game Game;
+        Gameplay Game;
+        string _message;
         string Message {
+            get { return _message; }
             set
             {
+                _message = value;
                 OnMessage(this, new MessageEventArgs(value));
             }
         }
 
-        public ClientServer(Game game)
+        public ClientServer(Gameplay game)
         {
             Game = game;
             Socket.Opened += OnSocketOpen;
             Socket.Error += HandleSocketError;
+            Socket.MessageReceived += (s, e) => Message = e.Message;
             Socket.DataReceived += HandleData;
-            //Socket.MessageReceived += HandleMessage;
-            Socket.DataReceived += HandleData;
-            Socket.Closed += OnSocketClosed;
+            Socket.Closed += (s, e) => Message = (e as ClosedEventArgs).Reason;
         }
 
         public void Connect()
         {
-            CloseSocket();
             Message = "Connecting to server...";
             try
             {
+                CloseSocket();
                 Socket.Open();
             }
             catch (Exception e)
@@ -51,13 +54,9 @@ namespace Snake
             }
         }
 
-        void OnSocketClosed(object sender, EventArgs e)
-        {
-            Message = "Connection to server lost. You've probably killed yourself.";
-        }
-
         void OnSocketOpen(object sender, EventArgs e)
         {
+            Socket.Send("gdfFDgert4t$T3DSffert34#fg1");
             Message = "Connection to server established";
             //Game.Score = 0;
             ReportSituation();
@@ -75,7 +74,9 @@ namespace Snake
 
         void HandleData(object sender, DataReceivedEventArgs e)
         {
-            // 0 - action (2 - move, 0 - enter, 1 - exit, 3 - food, 4 - grid size, 5 - color
+            // 0 - action (2 - move, 0 - enter, 1 - exit, 3 - food, 4 - grid size, 5 - color,
+            // 6 - speeds (normal, nitro), 7 - points (food, nitro penalty) )
+            
             // 1 - id
             // 2, 3 - score
             // 4 - color
@@ -94,9 +95,9 @@ namespace Snake
                 case 2:
                     int score = data[2];
                     score = (score << 8) | data[3];
-                    int color = data[4];
+                    //int color = data[4];
                     bool nitro = data[5] > 0;
-                    var opponent = Game.GetOrMakeOpponent(id, color, score, nitro);
+                    var opponent = Game.GetOrMakeOpponent(id, Color.Gray, score, nitro);
                     var oppSnake = opponent.Snake;
                     for (int i = 6; i < data.Length; i += 2)
                     {
@@ -112,7 +113,13 @@ namespace Snake
                     Game.Grid = new Vec2(data[6], data[7]);
                     break;
                 case 5:
-                    Game.ColorNum = data[6];
+                    (id == 255 ? Game : Game.Opponents[id]).Color = Color.FromArgb(data[6], data[7], data[8]);
+                    break;
+                case 6:
+                    Game.InitialSpeed = data[6];
+                    break;
+                case 7:
+                    Game.FoodPoints = data[6];
                     break;
                 default:
                     break;
@@ -126,7 +133,7 @@ namespace Snake
             packet[1] = 255; // fake id
             packet[2] = (byte)(Game.Score >> 8);
             packet[3] = (byte)Game.Score;
-            packet[4] = (byte)Game.ColorNum;
+            packet[4] = 0;
             packet[5] = (byte)(Game.Nitro ? 1 : 0);
             return packet;
         }
@@ -157,11 +164,11 @@ namespace Snake
             }
         }
 
-        public void CloseSocket()
+        public void CloseSocket(string reason = "Connection to server lost")
         {
             if (Socket.State == WebSocketState.Open)
             {
-                Socket.Close();
+                Socket.Close(reason);
             }
         }
     }

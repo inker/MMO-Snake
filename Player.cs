@@ -1,17 +1,18 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 
 namespace Snake
 {
     public class Player
     {
         public List<Vec2> Snake;
-        public int ColorNum;
+        public Color Color;
         public int Score;
         public bool Nitro;
-        public Player(List<Vec2> snake, int colorNum, int score = 0, bool nitro = false)
+        public Player(List<Vec2> snake, Color color, int score = 0, bool nitro = false)
         {
             Snake = snake;
-            ColorNum = colorNum;
+            Color = color;
             Score = score;
             Nitro = nitro;
         }

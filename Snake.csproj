@@ -24,6 +24,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -65,7 +66,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientServer.cs" />
-    <Compile Include="Game.cs" />
+    <Compile Include="CBO.cs" />
+    <Compile Include="Gameplay.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="SnakeWindow.cs">
       <SubType>Form</SubType>
@@ -76,7 +78,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="Vec2.cs" />
+    <Compile Include="VBO.cs" />
+    <Compile Include="Vector2.cs" />
     <EmbeddedResource Include="SnakeWindow.resx">
       <DependentUpon>SnakeWindow.cs</DependentUpon>
     </EmbeddedResource>

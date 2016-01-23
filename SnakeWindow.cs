@@ -1,6 +1,7 @@
 ﻿using SharpGL;
 using SharpGL.SceneGraph;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -10,14 +11,14 @@ namespace Snake
     public partial class SnakeWindow : Form
     {
         static Vec2 MaxWindowSize = new Vec2(900, 500);
-        static SolidBrush[] Brushes = new uint[] {
-            0xff0000, 0x0040ff, 0x008000, 0xffff00, 0xff8000, 0x00ffff, 0xff00ff
-        }.Select(i => new SolidBrush(Color.FromArgb((int)(i + 0xff000000)))).ToArray();
 
-        Game Game;
+        Gameplay Game;
         int TileSize;
         Timer Timer = new Timer();
-        int InitialInterval = 1000 / Game.InitialSpeed;
+        int InitialInterval;
+
+        VBO Vbo;
+        Dictionary<Color, CBO> Cbo = new Dictionary<Color, CBO>();
 
         bool _openGLMode;
         bool OpenGLMode
@@ -50,13 +51,17 @@ namespace Snake
         public SnakeWindow()
         {
             InitializeComponent();
-
+            var gl = GLControl.OpenGL;
+            Vbo = new VBO(gl);
+            Cbo[Color.White] = new CBO(gl, Color.White);
             //GLControl.AutoScaleMode = AutoScaleMode.Dpi;
             //GLControl.Scale(new SizeF(2f, 2f));
 
-            Game = new Game();
+            Game = new Gameplay();
+            InitialInterval = 1000 / Game.InitialSpeed;
             Game.OnMessage += GameOnMessage;
             Game.GridResize += (s, e) => ResizeCanvas();
+            Game.SpeedChange += (s, e) => InitialInterval = 1000 / Game.InitialSpeed;
 
             ResizeCanvas();
 
@@ -118,7 +123,7 @@ namespace Snake
 
         private void UpdateGame()
         {
-            if (Timer.Interval < InitialInterval)
+            if (Timer.Interval != InitialInterval)
             {
                 if (!Game.Nitro)
                 {
@@ -135,7 +140,6 @@ namespace Snake
         private void Repaint(object sender, PaintEventArgs e)
         {
             Graphics canvas = e.Graphics;
-
             if (Game.IsOver)
             {
                 int centerWidth = Canvas.Width / 2;
@@ -166,11 +170,12 @@ namespace Snake
 
         private SolidBrush DrawSnake(Graphics canvas, Player player, Vec2 partSize)
         {
-            var brush = Brushes[player.ColorNum];
+            var color = player.Color;
             if (player.Nitro)
             {
-                brush = Util.BrightenBrush(brush);
+                color = Util.BrightenColor(color);
             }
+            var brush = new SolidBrush(color);
             try
             {
                 foreach (var part in player.Snake)
@@ -212,17 +217,32 @@ namespace Snake
         private void GLResized(object sender, EventArgs e)
         {
             OpenGL gl = GLControl.OpenGL;
+            
             gl.MatrixMode(OpenGL.GL_PROJECTION);
             gl.LoadIdentity();
             gl.Perspective(90.0f, (double)Width / (double)Height, 0.01, 1000.0);
             float y = Game != null && Game.Grid != null ? Game.Grid.Y : 150;
             gl.LookAt(1, 25 + (y - 50) * 0.5, 32 + (y - 50) * 1.2, 0, 0, 0, 0, 1, 0);
             gl.MatrixMode(OpenGL.GL_MODELVIEW);
+          
         }
+
+
 
         void GLDraw(object sender, RenderEventArgs e)
         {
-            OpenGL gl = GLControl.OpenGL;
+            var gl = GLControl.OpenGL;
+            gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
+            gl.LoadIdentity(); // somehow this shit ends endless movement of the scene
+
+
+            //Util.MakeVBO(gl, new GLColor(0, 1, 1, 1));
+            //gl.EnableClientState(OpenGL.GL_VERTEX_ARRAY);
+            //gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, )
+            //Util.DrawGLCube(gl, new Vertex(1, 0, 1), 1, new GLColor(0, 0, 1, 1));
+            //Util.DrawGLBox(gl, new Vertex(0, 0, 0), new Vertex(1, 1, 1), new GLColor(1, 1, 0, 1));
+
+            //OpenGL gl = GLControl.OpenGL;
             if (Game.IsOver)
             {
                 gl.ClearColor(0, 0, 0, 0);
@@ -235,44 +255,42 @@ namespace Snake
                 return;
             }
 
-            gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-            gl.LoadIdentity();
-            //gl.Scale(0.5f, 0.5f, 0.5f);
-            var a = new SharpGL.RenderContextProviders.FBORenderContextProvider();
+            //gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
+            //gl.LoadIdentity();
+            ////gl.Scale(0.5f, 0.5f, 0.5f);
             float tx = (-Game.Grid.X >> 1) + 5 - (float)Game.Snake[0].X / 5,
                 ty = -((float)Game.Snake[0].Y / 15),
                 tz = -20 - ((float)Game.Snake[0].Y / 15);
             gl.Translate(tx, ty, tz);
-            
-            gl.LineWidth(1f);
-            gl.Color(0.1f, 0.1f, 0.1f, 1f);
-            gl.Begin(OpenGL.GL_LINES);
-            for (int i = 0; i <= Game.Grid.X; ++i)
+
+            Util.DrawLines(gl, Game.Grid);
+            gl.Translate(0.5f, 0.5f, 0.5f);
+
+            //gl.ClearColor(0, 0, 0, 0);
+            //gl.Rotate(0, -1, 0);
+            CBO cbo;
+            if (!Cbo.TryGetValue(Game.Color, out cbo))
             {
-                gl.Vertex(i, 0, 0);
-                gl.Vertex(i, 0, Game.Grid.Y);
+                cbo = new CBO(gl, Game.Color);
             }
-            for (int i = 0; i <= Game.Grid.Y; ++i)
-            {
-                gl.Vertex(0, 0, i);
-                gl.Vertex(Game.Grid.X, 0, i);
-            }
-            gl.End();
-            var color = Util.DrawGLSnake(gl, Game, Brushes);
+
+            var color = Util.DrawGLSnake(gl, Game, Vbo, cbo);
             int offsetY = GLControl.Height - 30;
-            Util.DrawGLScore(gl, offsetY -= 25, "You", Game.Score, color);
+            Util.DrawGLScore(gl, offsetY -= 25, "You", Game.Score, Game.Color);
             foreach (var pair in Game.Opponents)
             {
                 var opponent = pair.Value;
-                color = Util.DrawGLSnake(gl, opponent, Brushes);
-                Util.DrawGLScore(gl, offsetY -= 25, "Opponent " + pair.Key, opponent.Score, color);
+                color = Util.DrawGLSnake(gl, opponent, Vbo, cbo);
+                Util.DrawGLScore(gl, offsetY -= 25, "Opponent " + pair.Key, opponent.Score, opponent.Color);
             }
-            Util.DrawGLBox(gl, new Vertex(Game.Food.X, 0, Game.Food.Y), new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), new GLColor(1, 1, 1, 1));
-            var brinkColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
-            Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(0, 0, Game.Grid.Y), brinkColor);
-            Util.DrawGLBox(gl, new Vertex(Game.Grid.X, 1, -1), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y), brinkColor);
-            Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(Game.Grid.X, 0, 0), brinkColor);
-            Util.DrawGLBox(gl, new Vertex(-1, 1, Game.Grid.Y), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y + 1), brinkColor);
+            //Util.MakeVBO(gl, new GLColor(1, 1, 1, 1));
+            Util.foo(gl, Vbo, Cbo[Color.White], new Vertex(Game.Food.X, 0, Game.Food.Y));
+            ////Util.DrawGLBox(gl, , new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), );
+            //var brinkColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
+            ////Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(0, 0, Game.Grid.Y), brinkColor);
+            ////Util.DrawGLBox(gl, new Vertex(Game.Grid.X, 1, -1), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y), brinkColor);
+            ////Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(Game.Grid.X, 0, 0), brinkColor);
+            ////Util.DrawGLBox(gl, new Vertex(-1, 1, Game.Grid.Y), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y + 1), brinkColor);
         }
     }
 }

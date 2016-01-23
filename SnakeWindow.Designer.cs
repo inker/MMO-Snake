@@ -106,6 +106,7 @@ namespace Snake
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Font = new System.Drawing.Font("Verdana", 9, System.Drawing.FontStyle.Regular);
             this.ClientSize = new System.Drawing.Size(568, 347);
             this.Controls.Add(this.StatusStrip);
             this.Controls.Add(this.MenuStrip);

@@ -1,15 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace Snake
 {
-    public class Game : Player
+    public class Gameplay : Player
     {
-        public static int FoodPoints = 10;
-        public static int NitroPenalty = 1;
-        public static int InitialSnakeLength = 4;
-        public static int InitialSpeed = 20; // tiles per second
+        public int FoodPoints = 10;
+        public int NitroPenalty = 1;
+        public int InitialSnakeLength = 4;
+        int _initialSpeed = 20;
+
+        public int InitialSpeed
+        {
+            get { return _initialSpeed; }
+            set
+            {
+                _initialSpeed = value;
+                SpeedChange(this, new EventArgs());
+            }
+        }
 
         public event EventHandler OnMessage
         {
@@ -18,6 +29,7 @@ namespace Snake
         }
 
         public event EventHandler GridResize;
+        public event EventHandler SpeedChange;
 
         private Vec2 _grid = new Vec2(70, 50);
         public Vec2 Grid
@@ -48,7 +60,7 @@ namespace Snake
         int Direction = 39; // Left = 37, Up = 38, Right = 39, Down = 40
         bool FreeNitro;
 
-        public Game() : base(new List<Vec2>(), 0)
+        public Gameplay() : base(new List<Vec2>(), System.Drawing.Color.Red)
         {
             Server = new ClientServer(this);
         }
@@ -90,7 +102,7 @@ namespace Snake
         {
             if (IsOver)
             {
-                Server.CloseSocket();
+                Server.CloseSocket("Connection closed. You've killed yourself.");
                 return;
             }
             Server.ReportSituation();
@@ -193,19 +205,19 @@ namespace Snake
         }
 
 
-        public Player GetOrMakeOpponent(byte id, int colorNum, int score, bool nitro)
+        public Player GetOrMakeOpponent(byte id, Color color, int score, bool nitro)
         {
             Player opponent;
             if (Opponents.TryGetValue(id, out opponent))
             {
                 opponent.Score = score;
-                opponent.ColorNum = colorNum;
+                opponent.Color = color;
                 opponent.Nitro = nitro;
                 opponent.Snake.Clear();
             }
             else
             {
-                opponent = new Player(new List<Vec2>(), colorNum, score, nitro);
+                opponent = new Player(new List<Vec2>(), color, score, nitro);
                 Opponents.Add(id, opponent);
             }
             return opponent;
