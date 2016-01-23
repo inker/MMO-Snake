@@ -10,6 +10,10 @@ namespace Snake
 {
     public partial class SnakeWindow : Form
     {
+        static string[] OpponentNames = new string[] 
+        {
+            "Foo", "Bar", "Baz", "Qux", "Quux", "Corge", "Grault", "Garply", "Waldo", "Fred", "Plugh", "Xyzzy", "Thud"
+        };
         static Vec2 MaxWindowSize = new Vec2(900, 500);
 
         Gameplay Game;
@@ -54,6 +58,7 @@ namespace Snake
             var gl = GLControl.OpenGL;
             Vbo = new VBO(gl);
             Cbo[Color.White] = new CBO(gl, Color.White);
+            Cbo[Color.Gray] = new CBO(gl, Color.Gray);
             //GLControl.AutoScaleMode = AutoScaleMode.Dpi;
             //GLControl.Scale(new SizeF(2f, 2f));
 
@@ -161,7 +166,8 @@ namespace Snake
                 {
                     var opponent = pair.Value;
                     brush = DrawSnake(canvas, pair.Value, tileVec);
-                    var scoreString = string.Format("Opponent {0}: {1}", pair.Key, opponent.Score);
+                    var name = pair.Key < OpponentNames.Length ? OpponentNames[pair.Key] : "Opponent " + (pair.Key - OpponentNames.Length - 1);
+                    var scoreString = name + ": " + opponent.Score;
                     canvas.DrawString(scoreString, this.Font, brush, new PointF(4, offsetY += 16));
                 }
                 Util.DrawRectangle(canvas, Game.Food * TileSize, tileVec, System.Drawing.Brushes.White);
@@ -217,17 +223,13 @@ namespace Snake
         private void GLResized(object sender, EventArgs e)
         {
             OpenGL gl = GLControl.OpenGL;
-            
             gl.MatrixMode(OpenGL.GL_PROJECTION);
             gl.LoadIdentity();
             gl.Perspective(90.0f, (double)Width / (double)Height, 0.01, 1000.0);
             float y = Game != null && Game.Grid != null ? Game.Grid.Y : 150;
             gl.LookAt(1, 25 + (y - 50) * 0.5, 32 + (y - 50) * 1.2, 0, 0, 0, 0, 1, 0);
-            gl.MatrixMode(OpenGL.GL_MODELVIEW);
-          
+            gl.MatrixMode(OpenGL.GL_MODELVIEW);   
         }
-
-
 
         void GLDraw(object sender, RenderEventArgs e)
         {
@@ -235,14 +237,6 @@ namespace Snake
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity(); // somehow this shit ends endless movement of the scene
 
-
-            //Util.MakeVBO(gl, new GLColor(0, 1, 1, 1));
-            //gl.EnableClientState(OpenGL.GL_VERTEX_ARRAY);
-            //gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, )
-            //Util.DrawGLCube(gl, new Vertex(1, 0, 1), 1, new GLColor(0, 0, 1, 1));
-            //Util.DrawGLBox(gl, new Vertex(0, 0, 0), new Vertex(1, 1, 1), new GLColor(1, 1, 0, 1));
-
-            //OpenGL gl = GLControl.OpenGL;
             if (Game.IsOver)
             {
                 gl.ClearColor(0, 0, 0, 0);
@@ -255,9 +249,6 @@ namespace Snake
                 return;
             }
 
-            //gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
-            //gl.LoadIdentity();
-            ////gl.Scale(0.5f, 0.5f, 0.5f);
             float tx = (-Game.Grid.X >> 1) + 5 - (float)Game.Snake[0].X / 5,
                 ty = -((float)Game.Snake[0].Y / 15),
                 tz = -20 - ((float)Game.Snake[0].Y / 15);
@@ -267,30 +258,50 @@ namespace Snake
             gl.Translate(0.5f, 0.5f, 0.5f);
 
             //gl.ClearColor(0, 0, 0, 0);
-            //gl.Rotate(0, -1, 0);
-            CBO cbo;
-            if (!Cbo.TryGetValue(Game.Color, out cbo))
-            {
-                cbo = new CBO(gl, Game.Color);
-            }
-
-            var color = Util.DrawGLSnake(gl, Game, Vbo, cbo);
+            
+            DrawGLSnake(gl, Game);
             int offsetY = GLControl.Height - 30;
             Util.DrawGLScore(gl, offsetY -= 25, "You", Game.Score, Game.Color);
             foreach (var pair in Game.Opponents)
             {
                 var opponent = pair.Value;
-                color = Util.DrawGLSnake(gl, opponent, Vbo, cbo);
-                Util.DrawGLScore(gl, offsetY -= 25, "Opponent " + pair.Key, opponent.Score, opponent.Color);
+                DrawGLSnake(gl, opponent);
+                var name = pair.Key < OpponentNames.Length ? OpponentNames[pair.Key] : "Opponent " + (pair.Key - OpponentNames.Length - 1);
+                Util.DrawGLScore(gl, offsetY -= 25, name, opponent.Score, opponent.Color);
             }
-            //Util.MakeVBO(gl, new GLColor(1, 1, 1, 1));
-            Util.foo(gl, Vbo, Cbo[Color.White], new Vertex(Game.Food.X, 0, Game.Food.Y));
-            ////Util.DrawGLBox(gl, , new Vertex(Game.Food.X + 1, 1, Game.Food.Y + 1), );
+            Util.DrawGLCube(gl, Vbo, Cbo[Color.White], new Vertex(Game.Food.X, 0, Game.Food.Y));
             //var brinkColor = new GLColor(0.8f, 0.8f, 0.8f, 1f);
             ////Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(0, 0, Game.Grid.Y), brinkColor);
             ////Util.DrawGLBox(gl, new Vertex(Game.Grid.X, 1, -1), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y), brinkColor);
             ////Util.DrawGLBox(gl, new Vertex(-1, 1, -1), new Vertex(Game.Grid.X, 0, 0), brinkColor);
             ////Util.DrawGLBox(gl, new Vertex(-1, 1, Game.Grid.Y), new Vertex(Game.Grid.X + 1, 0, Game.Grid.Y + 1), brinkColor);
+        }
+
+        void DrawGLSnake(OpenGL gl, Player player)
+        {
+
+            var color = player.Color;
+            if (player.Nitro)
+            {
+                color = Util.BrightenColor(color);
+            }
+            CBO cbo;
+            if (!Cbo.TryGetValue(color, out cbo))
+            {
+                cbo = new CBO(gl, color);
+                Cbo[color] = cbo;
+            }
+            try
+            {
+                foreach (var part in player.Snake)
+                {
+                    Util.DrawGLCube(gl, Vbo, cbo, new Vertex(part.X, 0, part.Y));
+                }
+            }
+            catch (Exception ex)
+            {
+                // swallow
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using SharpGL;
 using SharpGL.SceneGraph;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace Snake
@@ -54,7 +55,7 @@ namespace Snake
             gl.Enable(OpenGL.GL_POLYGON_SMOOTH);
         }
 
-        public static void foo(OpenGL gl, VBO vbo, CBO colorBuf, Vertex coordinates)
+        public static void DrawGLCube(OpenGL gl, VBO vbo, CBO colorBuf, Vertex coordinates)
         {
             gl.Translate(coordinates.X, coordinates.Y, coordinates.Z);
             gl.EnableClientState(OpenGL.GL_VERTEX_ARRAY);                   // activate vertex array
@@ -81,26 +82,6 @@ namespace Snake
             gl.Translate(-coordinates.X, -coordinates.Y, -coordinates.Z);
         }
 
-        public static GLColor DrawGLSnake(OpenGL gl, Player player, VBO vbo, CBO cbo)
-        {
-            var brushColor = player.Color;
-            if (player.Nitro)
-            {
-                brushColor = BrightenColor(brushColor);
-            }
-            var color = DrawingColorToGLColor(brushColor);
-            try
-            {
-                foreach (var part in player.Snake)
-                {
-                    foo(gl, vbo, cbo, new Vertex(part.X, 0, part.Y));
-                }
-            }
-            catch (Exception ex)
-            {
-                // swallow
-            }
-            return color;
-        }
+
     }
 }

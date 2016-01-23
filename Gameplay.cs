@@ -205,19 +205,18 @@ namespace Snake
         }
 
 
-        public Player GetOrMakeOpponent(byte id, Color color, int score, bool nitro)
+        public Player GetOrMakeOpponent(byte id, int score, bool nitro)
         {
             Player opponent;
             if (Opponents.TryGetValue(id, out opponent))
             {
                 opponent.Score = score;
-                opponent.Color = color;
                 opponent.Nitro = nitro;
                 opponent.Snake.Clear();
             }
             else
             {
-                opponent = new Player(new List<Vec2>(), color, score, nitro);
+                opponent = new Player(new List<Vec2>(), Color.Gray, score, nitro);
                 Opponents.Add(id, opponent);
             }
             return opponent;

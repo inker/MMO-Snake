@@ -97,7 +97,7 @@ namespace Snake
                     score = (score << 8) | data[3];
                     //int color = data[4];
                     bool nitro = data[5] > 0;
-                    var opponent = Game.GetOrMakeOpponent(id, Color.Gray, score, nitro);
+                    var opponent = Game.GetOrMakeOpponent(id, score, nitro);
                     var oppSnake = opponent.Snake;
                     for (int i = 6; i < data.Length; i += 2)
                     {
@@ -113,6 +113,8 @@ namespace Snake
                     Game.Grid = new Vec2(data[6], data[7]);
                     break;
                 case 5:
+                    var a = data;
+                    var b = Game.Opponents;
                     (id == 255 ? Game : Game.Opponents[id]).Color = Color.FromArgb(data[6], data[7], data[8]);
                     break;
                 case 6:
